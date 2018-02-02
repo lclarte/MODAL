@@ -1,7 +1,10 @@
 "use strict";
 
 const listePoints = [];
+const points_objects = null;
 let formeActuelle = null;
+let curveShape = null;
+let plat = true;
 
 main();
 
@@ -30,6 +33,10 @@ function main(){
     document.addEventListener( 'mousedown', wrapperMouseDown);
     const wrapperMouseUp = function(event) {onMouseUp(event)};
     document.addEventListener('mouseup', wrapperMouseUp);
+    const wrapperMouseMove = function(event) {onMouseMove(event, raycaster, screenSize, sceneThreeJs.sceneGraph, sceneThreeJs.camera);};
+    document.addEventListener('mousemove', wrapperMouseMove);
+    const wrapperKeyDown = function(event) {onKeyDown(event, sceneThreeJs)};
+    document.addEventListener('keydown', wrapperKeyDown);
 
     // *************************** //
     // Lancement de l'animatio
@@ -50,6 +57,16 @@ function init3DObjects(sceneGraph) {
 }
 
 function onMouseDown(event, raycaster, screenSize, sceneGraph, camera) {
+    /*
+    if(plat){
+        
+        const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneGraph, camera);
+        modifier_wireframe(pointIntersection, sceneGraph);
+    }
+    */
+}
+
+function calculer_point_intersection(event, raycaster, screenSize, sceneGraph, camera) {
     const xPixel = event.clientX;
     const yPixel = event.clientY;
 
@@ -61,19 +78,52 @@ function onMouseDown(event, raycaster, screenSize, sceneGraph, camera) {
     const intersection = intersects[0];
     const pointIntersection = intersection.point.clone();
 
-    sceneGraph.add(creerPoint(pointIntersection));
-
+    return pointIntersection;
 }
 
+function modifier_wireframe(pointIntersection, sceneGraph) {
+        listePoints.push(Vector2(pointIntersection.x, pointIntersection.z));
+        sceneGraph.add(creerPoint(pointIntersection));
+
+        const objet = sceneGraph.getObjectByName("wireframe");
+        sceneGraph.remove(objet);
+
+        curveShape = new THREE.Shape(listePoints);
+        const epaisseur = 0.1;
+
+        const geometryWireframe = new THREE.ShapeGeometry(curveShape);
+        const materialWireframe = new THREE.MeshBasicMaterial({color:0xff0000, wireframe: true, wireframeLinewidth: 2});
+        const objectWireframe = new THREE.Mesh(geometryWireframe, materialWireframe);
+        objectWireframe.position.set(0, 0, 0);
+        objectWireframe.rotateX(Math.PI/2);
+        objectWireframe.name = "wireframe";
+        sceneGraph.add(objectWireframe);  
+}
 
 function onMouseUp(event) {
-    const x = event.clientX;
-    const y = event.clientY;
-    listePoints.push(Vector2(x, y));
+
 }
 
-function onMouseMove( event, screenSize, camera ) {
+function onMouseMove(event, raycaster, screenSize, sceneGraph, camera) {
+    /*
+    Si pas de bouton appuyee, buttons = 0
+    si le bouton gauche, c'est 1 et si c'est le bouton droit, ca vaut 2
+    */
+    if(plat && event.buttons === 1) {
+        const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneGraph, camera);
+        modifier_wireframe(pointIntersection, sceneGraph);
+    }
+}
 
+function onKeyDown(event, scene) {
+    const altPressed = event.altKey;
+    if(plat === true && event.shiftKey === true) {
+        scene.controls.enabled = true;
+        plat = false;
+        extruder(scene.sceneGraph, curveShape);
+        const wf = scene.sceneGraph.getObjectByName("wireframe");
+        scene.sceneGraph.remove(wf);
+    }
 }
 
 // Demande le rendu de la scène 3D
@@ -148,9 +198,20 @@ function MaterialRGB(r,g,b) {
     return new THREE.MeshLambertMaterial( {color:c} );
 }
 
-//Fonctions perso
+//Fonctions perso 
 function creerPoint(v) {
     const sphereGeometry = primitive.Sphere(v, 0.02);
     const sphere = new THREE.Mesh(sphereGeometry, MaterialRGB(1, 0, 0));
     return sphere;
+}
+
+function extruder(sceneGraph, curve) {
+    let epaisseur = 1;
+    //modifier les parametres d'extrusion pour que la largeur s'adapte a la longueur
+    const extrudeSettings = {amount: epaisseur, bevelEnabled:false};
+    const extrudeGeometry = new THREE.ExtrudeBufferGeometry(curve, extrudeSettings);
+    const extrudeObject   = new THREE.Mesh(extrudeGeometry, MaterialRGB(1, 1, 1));
+    extrudeObject.name = "corps";
+    extrudeObject.rotateX(Math.PI/2);
+    sceneGraph.add(extrudeObject);
 }
