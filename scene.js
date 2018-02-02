@@ -82,7 +82,14 @@ function calculer_point_intersection(event, raycaster, screenSize, sceneGraph, c
 }
 
 function modifier_wireframe(pointIntersection, sceneGraph) {
-        listePoints.push(Vector2(pointIntersection.x, pointIntersection.z));
+        if(tester_deplacement_souris(pointIntersection.x, pointIntersection.z)){
+            listePoints.push(Vector2(pointIntersection.x, pointIntersection.z));
+            if(tester_angle_aigu(listePoints)) {
+                const n = listePoints.length;
+                const ptAngle = listePoints[n-2];
+                sceneGraph.add(creerPoint(Vector3(ptAngle.x, 0, ptAngle.y)));
+            }
+        }
         //sceneGraph.add(creerPoint(pointIntersection)); cette fonction ajoute les points
         //sur le wireframe mais en vrai on s'en bat les couilles donc on l'enleve
 
@@ -100,9 +107,6 @@ function modifier_wireframe(pointIntersection, sceneGraph) {
         objectWireframe.name = "wireframe";
         sceneGraph.add(objectWireframe);  
 
-        if(tester_angle_aigu(listePoints)) {
-            sceneGraph.add(creerPoint(pointIntersection));
-        }
 }
 
 function tester_angle_aigu(listePoints) { 
@@ -121,6 +125,18 @@ function tester_angle_aigu(listePoints) {
 
 }
 
+function tester_deplacement_souris(x, y) {
+    //On teste si la souris s'est deplacee d'assez pour qu'on modifie le wireframe
+    //x et y sont la position de la souris DANS le referentiel, pas sur l'ecran
+    const n = listePoints.length;
+    if(n == 0){
+        return true;
+    }
+    const dernierPoint = listePoints[n-1];
+    const d = distance(dernierPoint, Vector2(x, y));
+    return (d > 0.2);
+}
+
 function onMouseUp(event) {
 
 }
@@ -133,7 +149,6 @@ function onMouseMove(event, raycaster, screenSize, sceneGraph, camera) {
     if(plat && event.buttons === 1) {
         const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneGraph, camera);
         modifier_wireframe(pointIntersection, sceneGraph);
-        tester_angle_aigu(listePoints);
     }
 }
 
@@ -252,4 +267,14 @@ function dot(v1, v2) {
         product += v1[i]*v2[i];
     }
     return product;
+}
+
+function norme(v) {
+    return Math.sqrt(dot(v, v));
+}
+
+function distance(p1, p2) {
+    console.log(p1, '/', p2);
+    const v = [p2.x - p1.x, p2.y - p1.y];
+    return norme(v);
 }
