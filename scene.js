@@ -83,7 +83,8 @@ function calculer_point_intersection(event, raycaster, screenSize, sceneGraph, c
 
 function modifier_wireframe(pointIntersection, sceneGraph) {
         listePoints.push(Vector2(pointIntersection.x, pointIntersection.z));
-        sceneGraph.add(creerPoint(pointIntersection));
+        //sceneGraph.add(creerPoint(pointIntersection)); cette fonction ajoute les points
+        //sur le wireframe mais en vrai on s'en bat les couilles donc on l'enleve
 
         const objet = sceneGraph.getObjectByName("wireframe");
         sceneGraph.remove(objet);
@@ -98,6 +99,26 @@ function modifier_wireframe(pointIntersection, sceneGraph) {
         objectWireframe.rotateX(Math.PI/2);
         objectWireframe.name = "wireframe";
         sceneGraph.add(objectWireframe);  
+
+        if(tester_angle_aigu(listePoints)) {
+            sceneGraph.add(creerPoint(pointIntersection));
+        }
+}
+
+function tester_angle_aigu(listePoints) { 
+    //Fonction a appeler pour tester si le dernier point qu'on a 
+    //ajoute forme un angle aigu avec les deux precedents
+    const n = listePoints.length;
+    if(n > 2) {
+        const p1 = listePoints[n-3];
+        const p2 = listePoints[n-2];
+        const p3 = listePoints[n-1];
+        const a = angle(p1, p2, p3);
+        if(Math.abs(a) > 1.0) {
+            return true;
+        }
+    }
+
 }
 
 function onMouseUp(event) {
@@ -112,6 +133,7 @@ function onMouseMove(event, raycaster, screenSize, sceneGraph, camera) {
     if(plat && event.buttons === 1) {
         const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneGraph, camera);
         modifier_wireframe(pointIntersection, sceneGraph);
+        tester_angle_aigu(listePoints);
     }
 }
 
@@ -214,4 +236,20 @@ function extruder(sceneGraph, curve) {
     extrudeObject.name = "corps";
     extrudeObject.rotateX(Math.PI/2);
     sceneGraph.add(extrudeObject);
+}
+
+function angle(p1, p2, p3) {
+    //Ici, on a des points de dimension 2
+    const v1 = [p2.x - p1.x, p2.y - p1.y];
+    const v2 = [p3.x - p2.x, p3.y - p2.y];
+    //console.log(dot(v1, v2), '/', dot(v1, v1), '/', dot(v2, v2));
+    return Math.acos(dot(v1, v2)/Math.sqrt((dot(v1, v1)*dot(v2, v2)))); 
+}
+
+function dot(v1, v2) {
+    let product = 0;
+    for(var i = 0; i < v1.length; i++) {
+        product += v1[i]*v2[i];
+    }
+    return product;
 }
