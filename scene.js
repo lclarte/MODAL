@@ -1,14 +1,17 @@
 "use strict";
 
-const listePoints = [];
-const points_objects = null;
-let formeActuelle = null;
-let curveShape = null;
-let plat = true;
+//la structure variablesCorps va stocker les variables servant a la construction et la modification du
+//corps du vaisseau
+const variablesCorps = {
+    listePoints: [], //stocke la liste de tous les points qui constituent le corps du vaisseau
+    indicesCoins: [], //stocke les indices des elements de listePoints qui sont des coins du corps
+    plat: true,
+};
 
 main();
 
 function main(){
+
 
     const sceneThreeJs = {
         sceneGraph: null,
@@ -29,11 +32,11 @@ function main(){
 
     // Fonction à appeler lors du clic de la souris: selection d'un objet
     //  (Création d'un wrapper pour y passer les paramètres souhaités)
-    const wrapperMouseDown = function(event) { onMouseDown(event, raycaster, screenSize, sceneThreeJs.sceneGraph,sceneThreeJs.camera); };
+    const wrapperMouseDown = function(event) { onMouseDown(event, raycaster, screenSize, sceneThreeJs); };
     document.addEventListener( 'mousedown', wrapperMouseDown);
     const wrapperMouseUp = function(event) {onMouseUp(event)};
     document.addEventListener('mouseup', wrapperMouseUp);
-    const wrapperMouseMove = function(event) {onMouseMove(event, raycaster, screenSize, sceneThreeJs.sceneGraph, sceneThreeJs.camera);};
+    const wrapperMouseMove = function(event) {onMouseMove(event, raycaster, screenSize, sceneThreeJs);};
     document.addEventListener('mousemove', wrapperMouseMove);
     const wrapperKeyDown = function(event) {onKeyDown(event, sceneThreeJs)};
     document.addEventListener('keydown', wrapperKeyDown);
@@ -45,7 +48,7 @@ function main(){
 }
 
 function saveScene(sceneGraph,createdObjects) {
-    download( JSON.stringify(sceneGraph), "save_scene.js" );
+    download(JSON.stringify(sceneGraph), "save_scene.js" );
 }
 
 function init3DObjects(sceneGraph) {
@@ -56,17 +59,13 @@ function init3DObjects(sceneGraph) {
     sceneGraph.add(plane);
 }
 
-function onMouseDown(event, raycaster, screenSize, sceneGraph, camera) {
-    /*
-    if(plat){
-        
-        const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneGraph, camera);
-        modifier_wireframe(pointIntersection, sceneGraph);
-    }
-    */
+function onMouseDown(event, raycaster, screenSize, sceneThreeJs) {
 }
 
-function calculer_point_intersection(event, raycaster, screenSize, sceneGraph, camera) {
+function calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs) {
+    const sceneGraph = sceneThreeJs.sceneGraph;
+    const camera     = sceneThreeJs.camera;
+
     const xPixel = event.clientX;
     const yPixel = event.clientY;
 
@@ -81,13 +80,26 @@ function calculer_point_intersection(event, raycaster, screenSize, sceneGraph, c
     return pointIntersection;
 }
 
-function modifier_wireframe(pointIntersection, sceneGraph) {
+function modifier_wireframe(pointIntersection, sceneThreeJs) {
+        const sceneGraph = sceneThreeJs.sceneGraph;
+        const listePoints = variablesCorps.listePoints;
+        const indicesCoins = variablesCorps.indicesCoins;
+
+
         if(tester_deplacement_souris(pointIntersection.x, pointIntersection.z)){
             listePoints.push(Vector2(pointIntersection.x, pointIntersection.z));
-            if(tester_angle_aigu(listePoints)) {
-                const n = listePoints.length;
-                const ptAngle = listePoints[n-2];
-                sceneGraph.add(creerPoint(Vector3(ptAngle.x, 0, ptAngle.y)));
+            const n = listePoints.length; //longueur APRES avoir ajouter le denrier 
+            if(n >= 3) {
+                const p1 = listePoints[n-3];
+                const p2 = listePoints[n-2];
+                const p3 = listePoints[n-1];
+                if(tester_angle_aigu(p1, p2, p3)) {
+                    const n = listePoints.length;
+                    const ptAngle = listePoints[n-2];
+                    indicesCoins.push(n-2);
+                    console.log(indicesCoins)
+                    sceneGraph.add(creerPoint(Vector3(ptAngle.x, 0, ptAngle.y)));
+                }
             }
         }
         //sceneGraph.add(creerPoint(pointIntersection)); cette fonction ajoute les points
@@ -96,9 +108,10 @@ function modifier_wireframe(pointIntersection, sceneGraph) {
         const objet = sceneGraph.getObjectByName("wireframe");
         sceneGraph.remove(objet);
 
-        curveShape = new THREE.Shape(listePoints);
+        const curveShape = new THREE.Shape(listePoints);
         const epaisseur = 0.1;
 
+        //cette etape convertit la liste de points en objet 3D
         const geometryWireframe = new THREE.ShapeGeometry(curveShape);
         const materialWireframe = new THREE.MeshBasicMaterial({color:0xff0000, wireframe: true, wireframeLinewidth: 2});
         const objectWireframe = new THREE.Mesh(geometryWireframe, materialWireframe);
@@ -109,57 +122,32 @@ function modifier_wireframe(pointIntersection, sceneGraph) {
 
 }
 
-function tester_angle_aigu(listePoints) { 
-    //Fonction a appeler pour tester si le dernier point qu'on a 
-    //ajoute forme un angle aigu avec les deux precedents
-    const n = listePoints.length;
-    if(n > 2) {
-        const p1 = listePoints[n-3];
-        const p2 = listePoints[n-2];
-        const p3 = listePoints[n-1];
-        const a = angle(p1, p2, p3);
-        if(Math.abs(a) > 1.0) {
-            return true;
-        }
-    }
-
-}
-
-function tester_deplacement_souris(x, y) {
-    //On teste si la souris s'est deplacee d'assez pour qu'on modifie le wireframe
-    //x et y sont la position de la souris DANS le referentiel, pas sur l'ecran
-    const n = listePoints.length;
-    if(n == 0){
-        return true;
-    }
-    const dernierPoint = listePoints[n-1];
-    const d = distance(dernierPoint, Vector2(x, y));
-    return (d > 0.2);
-}
 
 function onMouseUp(event) {
 
 }
 
-function onMouseMove(event, raycaster, screenSize, sceneGraph, camera) {
+function onMouseMove(event, raycaster, screenSize, sceneThreeJs) {
     /*
     Si pas de bouton appuyee, buttons = 0
     si le bouton gauche, c'est 1 et si c'est le bouton droit, ca vaut 2
     */
-    if(plat && event.buttons === 1) {
-        const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneGraph, camera);
-        modifier_wireframe(pointIntersection, sceneGraph);
+    if(variablesCorps.plat && event.buttons === 1) {
+        const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs);
+        modifier_wireframe(pointIntersection, sceneThreeJs);
     }
 }
 
-function onKeyDown(event, scene) {
+function onKeyDown(event, sceneThreeJs) {
+    const listePoints = variablesCorps.plat;
+
     const altPressed = event.altKey;
-    if(plat === true && event.shiftKey === true) {
-        scene.controls.enabled = true;
-        plat = false;
-        extruder(scene.sceneGraph, curveShape);
-        const wf = scene.sceneGraph.getObjectByName("wireframe");
-        scene.sceneGraph.remove(wf);
+    if(variablesCorps.plat === true && event.shiftKey === true) {
+        sceneThreeJs.controls.enabled = true;
+        variablesCorps.plat = false;
+        extruder_listePoints(sceneThreeJs);
+        const wf = sceneThreeJs.sceneGraph.getObjectByName("wireframe");
+        sceneThreeJs.sceneGraph.remove(wf);
     }
 }
 
@@ -235,18 +223,62 @@ function MaterialRGB(r,g,b) {
     return new THREE.MeshLambertMaterial( {color:c} );
 }
 
-//Fonctions perso 
+/*
+
+Fonctions utilitaires permettant de verifier certaines proprietes geometriques 
+
+*/
+
+const SEUIL_ANGLE_AIGU = 1.0;
+
+function tester_angle_aigu(p1, p2, p3) { 
+    //Fonction a appeler pour tester si le dernier point qu'on a 
+    //ajoute forme un angle aigu avec les deux precedents
+    const a = angle(p1, p2, p3);
+    if(Math.abs(a) > SEUIL_ANGLE_AIGU) {
+        return true;
+    }
+    else{
+        return false;
+    }
+}
+
+
+function tester_deplacement_souris(x, y) {
+    //On teste si la souris s'est deplacee d'assez pour qu'on modifie le wireframe
+    //x et y sont la position de la souris DANS le referentiel, pas sur l'ecran$
+    const listePoints = variablesCorps.listePoints;
+
+    const n = listePoints.length;
+    if(n == 0){
+        return true;
+    }
+    const dernierPoint = listePoints[n-1];
+    const d = distance(dernierPoint, Vector2(x, y));
+    return (d > 0.2);
+}
+
+
+
+/*
+Fonctions utilitaires servant a diverses choses
+*/
 function creerPoint(v) {
     const sphereGeometry = primitive.Sphere(v, 0.02);
     const sphere = new THREE.Mesh(sphereGeometry, MaterialRGB(1, 0, 0));
     return sphere;
 }
 
-function extruder(sceneGraph, curve) {
+function extruder_listePoints(sceneThreeJs) {
+    const sceneGraph = sceneThreeJs.sceneGraph;
+    const listePoints = variablesCorps.listePoints;
+
+    const curveShape = new THREE.Shape(listePoints);
+
     let epaisseur = 1;
     //modifier les parametres d'extrusion pour que la largeur s'adapte a la longueur
     const extrudeSettings = {amount: epaisseur, bevelEnabled:false};
-    const extrudeGeometry = new THREE.ExtrudeBufferGeometry(curve, extrudeSettings);
+    const extrudeGeometry = new THREE.ExtrudeBufferGeometry(curveShape, extrudeSettings);
     const extrudeObject   = new THREE.Mesh(extrudeGeometry, MaterialRGB(1, 1, 1));
     extrudeObject.name = "corps";
     extrudeObject.rotateX(Math.PI/2);
@@ -257,7 +289,6 @@ function angle(p1, p2, p3) {
     //Ici, on a des points de dimension 2
     const v1 = [p2.x - p1.x, p2.y - p1.y];
     const v2 = [p3.x - p2.x, p3.y - p2.y];
-    //console.log(dot(v1, v2), '/', dot(v1, v1), '/', dot(v2, v2));
     return Math.acos(dot(v1, v2)/Math.sqrt((dot(v1, v1)*dot(v2, v2)))); 
 }
 
@@ -274,7 +305,6 @@ function norme(v) {
 }
 
 function distance(p1, p2) {
-    console.log(p1, '/', p2);
     const v = [p2.x - p1.x, p2.y - p1.y];
     return norme(v);
 }

@@ -1,4 +1,4 @@
-    "use strict";
+   "use strict";
 
 // Calcul et renvoie la rotation entre deux axes v1 et v2
 //   En supposant v1 et v2 normalisés:
