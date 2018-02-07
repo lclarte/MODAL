@@ -65,7 +65,6 @@ function main(){
 
 
 function onMouseUp(event) {
-
 }
 
 
@@ -79,6 +78,7 @@ function onMouseMove(event, raycaster, screenSize, sceneThreeJs) {
     }
     else if (phase_actuelle === phases.PHASE_BALLONS && event.buttons === 1){
         const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs);
+        modifier_ballons(pointIntersection, sceneThreeJs);
     }
 }
 
@@ -218,8 +218,13 @@ function lisser_listePoints() {
 
 /** POUR LA DEUXUEME PHASE */
 
-function changer_ballons(pointIntersection3D) {
+function modifier_ballons(pointIntersection3D, sceneThreeJs) {
+    const listePoints = variablesBallons.listePoints;
 
+    if(tester_deplacement_souris(pointIntersection3D.x, pointIntersection3D.y)) {
+        listePoints.push(Vector2(pointIntersection3D.x, pointIntersection3D.y));
+        
+    }
 }
 
 // Demande le rendu de la scène 3D
