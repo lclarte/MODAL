@@ -1,11 +1,27 @@
 "use strict";
 
+//cette structure constitue une enumeration pour 
+//savoir dans quelle phase de conception on est
+//actuellement.
+
+const phases = {
+    PHASE_CORPS:   0,
+    PHASE_BALLONS: 1,
+    PHASE_DETAILS: 2,
+};
+
+let phase_actuelle = phases.PHASE_CORPS;
+
 //la structure variablesCorps va stocker les variables servant a la construction et la modification du
 //corps du vaisseau
 const variablesCorps = {
     listePoints: [], //stocke la liste de tous les points qui constituent le corps du vaisseau
     indicesCoins: [], //stocke les indices des elements de listePoints qui sont des coins du corps
     plat: true,
+};
+
+const variablesBallons = {
+    listePoints: [],
 };
 
 main();
@@ -42,25 +58,91 @@ function main(){
     document.addEventListener('keydown', wrapperKeyDown);
 
     // *************************** //
-    // Lancement de l'animatio
+    // Lancement de l'animation
     // *************************** //
     animationLoop(sceneThreeJs);
 }
 
-function saveScene(sceneGraph,createdObjects) {
-    download(JSON.stringify(sceneGraph), "save_scene.js" );
+
+function onMouseUp(event) {
+
+}
+
+
+function onMouseDown(event, raycaster, screenSize, sceneThreeJs) {
+}
+
+function onMouseMove(event, raycaster, screenSize, sceneThreeJs) {
+    if(phase_actuelle === phases.PHASE_CORPS && event.buttons === 1) {
+        const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs);
+        modifier_wireframe(pointIntersection, sceneThreeJs);
+    }
+    else if (phase_actuelle === phases.PHASE_BALLONS && event.buttons === 1){
+        //const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs);
+    }
+}
+
+function onKeyDown(event, sceneThreeJs) {
+    const listePoints = variablesCorps.listePoints;
+    const n           =  listePoints.length;
+
+    const altPressed = event.altKey;
+    if(variablesCorps.plat === true && event.shiftKey === true) {
+        //dans un premier temps, il faut verifier si le dernier point s
+        //forme un angle droit avec le point 0 
+        const p1 = listePoints[n-2];
+        const p2 = listePoints[n-1];
+        const p3 = listePoints[0];
+
+        if(tester_angle_aigu(p1, p2, p3)) {
+            variablesCorps.indicesCoins.push(n-1);
+            const ptAngle = listePoints[n-1];
+            console.log(variablesCorps.indicesCoins);
+            sceneThreeJs.sceneGraph.add(creerPoint(Vector3(ptAngle.x, ptAngle.y, 0)));
+        } 
+        
+        sceneThreeJs.controls.enabled = true;
+        
+        variablesCorps.plat = false;
+        extruder_listePoints(sceneThreeJs);
+        const wf = sceneThreeJs.sceneGraph.getObjectByName("wireframe");
+        sceneThreeJs.sceneGraph.remove(wf);
+
+        phase_actuelle = phases.PHASE_BALLONS;
+    }
 }
 
 function init3DObjects(sceneGraph) {
-    const planeGeometry = primitive.Quadrangle(Vector3(-10, 0, -10), Vector3(-10, 0, 10), Vector3(10, 0, 10), Vector3(10, 0, -10));
+    const planeGeometry = primitive.Quadrangle(Vector3(-10, -10, 0), Vector3(-10, 10, 0), Vector3(10, 10, 0), Vector3(10, -10, 0));
     const plane = new THREE.Mesh(planeGeometry, MaterialRGB(2, 2, 2));
     plane.material.opacity = 0;
     plane.material.transparent = true; //les deux lignes sont necessaires 
     sceneGraph.add(plane);
 }
 
-function onMouseDown(event, raycaster, screenSize, sceneThreeJs) {
+
+// Fonction d'initialisation d'une scène 3D sans objets 3D
+//  Création d'un graphe de scène et ajout d'une caméra et d'une lumière.
+//  Création d'un moteur de rendu et ajout dans le document HTML
+function initEmptyScene(sceneThreeJs) {
+
+    sceneThreeJs.sceneGraph = new THREE.Scene();
+
+    sceneThreeJs.camera = sceneInit.createCamera(0, 0, -5);
+    //la camera est situee sur l'axe z 
+    sceneThreeJs.camera.lookAt(0, 0, 0);
+    sceneInit.insertAmbientLight(sceneThreeJs.sceneGraph);
+    sceneInit.insertLight(sceneThreeJs.sceneGraph,Vector3(1,2,2));
+
+    sceneThreeJs.renderer = sceneInit.createRenderer();
+    sceneInit.insertRenderInHtml(sceneThreeJs.renderer.domElement);
+
+    sceneThreeJs.controls = new THREE.OrbitControls(sceneThreeJs.camera);
+    sceneThreeJs.controls.enabled = false;
+
+    window.addEventListener('resize', function(event){onResize(sceneThreeJs);}, false);
 }
+
 
 function calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs) {
     const sceneGraph = sceneThreeJs.sceneGraph;
@@ -75,7 +157,7 @@ function calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs)
     raycaster.setFromCamera(Vector2(x, y), camera);
     const intersects = raycaster.intersectObjects(sceneGraph.children);
     const intersection = intersects[0];
-    const pointIntersection = intersection.point.clone();
+    const pointintIntersection = intersection.point.clone();
 
     return pointIntersection;
 }
@@ -86,8 +168,8 @@ function modifier_wireframe(pointIntersection, sceneThreeJs) {
         const indicesCoins = variablesCorps.indicesCoins;
 
 
-        if(tester_deplacement_souris(pointIntersection.x, pointIntersection.z)){
-            listePoints.push(Vector2(pointIntersection.x, pointIntersection.z));
+        if(tester_deplacement_souris(pointIntersection.x, pointIntersection.y)){
+            listePoints.push(Vector2(pointIntersection.x, pointIntersection.y));
             const n = listePoints.length; //longueur APRES avoir ajouter le denrier 
             if(n >= 3) {
                 const p1 = listePoints[n-3];
@@ -98,7 +180,7 @@ function modifier_wireframe(pointIntersection, sceneThreeJs) {
                     const ptAngle = listePoints[n-2];
                     indicesCoins.push(n-2);
                     console.log(indicesCoins)
-                    sceneGraph.add(creerPoint(Vector3(ptAngle.x, 0, ptAngle.y)));
+                    sceneGraph.add(creerPoint(Vector3(ptAngle.x, ptAngle.y, 0)));
                 }
             }
         }
@@ -116,39 +198,23 @@ function modifier_wireframe(pointIntersection, sceneThreeJs) {
         const materialWireframe = new THREE.MeshBasicMaterial({color:0xff0000, wireframe: true, wireframeLinewidth: 2});
         const objectWireframe = new THREE.Mesh(geometryWireframe, materialWireframe);
         objectWireframe.position.set(0, 0, 0);
-        objectWireframe.rotateX(Math.PI/2);
         objectWireframe.name = "wireframe";
         sceneGraph.add(objectWireframe);  
 
 }
 
+function lisser_listePoints() {
+    const listePoints = variablesCorps.listePoints;
+    const listeCoins = variablesCorps.indicesCoins;
 
-function onMouseUp(event) {
+
 
 }
 
-function onMouseMove(event, raycaster, screenSize, sceneThreeJs) {
-    /*
-    Si pas de bouton appuyee, buttons = 0
-    si le bouton gauche, c'est 1 et si c'est le bouton droit, ca vaut 2
-    */
-    if(variablesCorps.plat && event.buttons === 1) {
-        const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs);
-        modifier_wireframe(pointIntersection, sceneThreeJs);
-    }
-}
+/** POUR LA DEUXUEME PHASE */
 
-function onKeyDown(event, sceneThreeJs) {
-    const listePoints = variablesCorps.plat;
+function changer_ballons(pointIntersection3D) {
 
-    const altPressed = event.altKey;
-    if(variablesCorps.plat === true && event.shiftKey === true) {
-        sceneThreeJs.controls.enabled = true;
-        variablesCorps.plat = false;
-        extruder_listePoints(sceneThreeJs);
-        const wf = sceneThreeJs.sceneGraph.getObjectByName("wireframe");
-        sceneThreeJs.sceneGraph.remove(wf);
-    }
 }
 
 // Demande le rendu de la scène 3D
@@ -162,26 +228,6 @@ function animate(sceneThreeJs, time) {
     render(sceneThreeJs);
 }
 
-// Fonction d'initialisation d'une scène 3D sans objets 3D
-//  Création d'un graphe de scène et ajout d'une caméra et d'une lumière.
-//  Création d'un moteur de rendu et ajout dans le document HTML
-function initEmptyScene(sceneThreeJs) {
-
-    sceneThreeJs.sceneGraph = new THREE.Scene();
-
-    sceneThreeJs.camera = sceneInit.createCamera(0, 5, 0);
-    sceneThreeJs.camera.lookAt(0, 0, 0);
-    sceneInit.insertAmbientLight(sceneThreeJs.sceneGraph);
-    sceneInit.insertLight(sceneThreeJs.sceneGraph,Vector3(1,2,2));
-
-    sceneThreeJs.renderer = sceneInit.createRenderer();
-    sceneInit.insertRenderInHtml(sceneThreeJs.renderer.domElement);
-
-    sceneThreeJs.controls = new THREE.OrbitControls(sceneThreeJs.camera);
-    sceneThreeJs.controls.enabled = false;
-
-    window.addEventListener('resize', function(event){onResize(sceneThreeJs);}, false);
-}
 
 // Fonction de gestion d'animation
 function animationLoop(sceneThreeJs) {
@@ -259,7 +305,6 @@ function tester_deplacement_souris(x, y) {
 }
 
 
-
 /*
 Fonctions utilitaires servant a diverses choses
 */
@@ -281,7 +326,6 @@ function extruder_listePoints(sceneThreeJs) {
     const extrudeGeometry = new THREE.ExtrudeBufferGeometry(curveShape, extrudeSettings);
     const extrudeObject   = new THREE.Mesh(extrudeGeometry, MaterialRGB(1, 1, 1));
     extrudeObject.name = "corps";
-    extrudeObject.rotateX(Math.PI/2);
     sceneGraph.add(extrudeObject);
 }
 
