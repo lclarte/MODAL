@@ -78,29 +78,17 @@ function onMouseMove(event, raycaster, screenSize, sceneThreeJs) {
         modifier_wireframe(pointIntersection, sceneThreeJs);
     }
     else if (phase_actuelle === phases.PHASE_BALLONS && event.buttons === 1){
-        //const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs);
+        const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs);
     }
 }
 
 function onKeyDown(event, sceneThreeJs) {
-    const listePoints = variablesCorps.listePoints;
-    const n           =  listePoints.length;
-
     const altPressed = event.altKey;
     if(variablesCorps.plat === true && event.shiftKey === true) {
         //dans un premier temps, il faut verifier si le dernier point s
         //forme un angle droit avec le point 0 
-        const p1 = listePoints[n-2];
-        const p2 = listePoints[n-1];
-        const p3 = listePoints[0];
+        calculer_dernier_angle_droit(sceneThreeJs);
 
-        if(tester_angle_aigu(p1, p2, p3)) {
-            variablesCorps.indicesCoins.push(n-1);
-            const ptAngle = listePoints[n-1];
-            console.log(variablesCorps.indicesCoins);
-            sceneThreeJs.sceneGraph.add(creerPoint(Vector3(ptAngle.x, ptAngle.y, 0)));
-        } 
-        
         sceneThreeJs.controls.enabled = true;
         
         variablesCorps.plat = false;
@@ -157,9 +145,29 @@ function calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs)
     raycaster.setFromCamera(Vector2(x, y), camera);
     const intersects = raycaster.intersectObjects(sceneGraph.children);
     const intersection = intersects[0];
-    const pointintIntersection = intersection.point.clone();
+    const pointIntersection = intersection.point.clone();
 
     return pointIntersection;
+}
+
+/*
+POUR LA PHASE UNE 
+*/
+
+function calculer_dernier_angle_droit(sceneThreeJs) {
+        const listePoints = variablesCorps.listePoints;
+        const n           =  listePoints.length;
+        const p1          = listePoints[n-2];
+        const p2          = listePoints[n-1];
+        const p3          = listePoints[0];
+
+        if(tester_angle_aigu(p1, p2, p3)) {
+            variablesCorps.indicesCoins.push(n-1);
+            const ptAngle = listePoints[n-1];
+            console.log(variablesCorps.indicesCoins);
+            sceneThreeJs.sceneGraph.add(creerPoint(Vector3(ptAngle.x, ptAngle.y, 0)));
+        }
+        
 }
 
 function modifier_wireframe(pointIntersection, sceneThreeJs) {
@@ -206,9 +214,6 @@ function modifier_wireframe(pointIntersection, sceneThreeJs) {
 function lisser_listePoints() {
     const listePoints = variablesCorps.listePoints;
     const listeCoins = variablesCorps.indicesCoins;
-
-
-
 }
 
 /** POUR LA DEUXUEME PHASE */
