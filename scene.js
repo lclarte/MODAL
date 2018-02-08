@@ -65,6 +65,9 @@ function main(){
 
 
 function onMouseUp(event) {
+    if(phase_actuelle == phases.PHASE_BALLONS) {
+        listePoints_to_ballons();
+    }
 }
 
 
@@ -78,7 +81,8 @@ function onMouseMove(event, raycaster, screenSize, sceneThreeJs) {
     }
     else if (phase_actuelle === phases.PHASE_BALLONS && event.buttons === 1){
         const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs);
-        modifier_ballons(pointIntersection, sceneThreeJs);
+        modifier_listePoints_ballons(pointIntersection, sceneThreeJs);
+        listePoints_to_curve(sceneThreeJs);
     }
 }
 
@@ -89,7 +93,7 @@ function onKeyDown(event, sceneThreeJs) {
         //forme un angle droit avec le point 0 
         calculer_dernier_angle_droit(sceneThreeJs);
 
-        sceneThreeJs.controls.enabled = true;
+        //sceneThreeJs.controls.enabled = true;
         
         variablesCorps.plat = false;
         extruder_listePoints(sceneThreeJs);
@@ -212,19 +216,53 @@ function modifier_wireframe(pointIntersection, sceneThreeJs) {
 }
 
 function lisser_listePoints() {
-    const listePoints = variablesCorps.listePoints;
-    const listeCoins = variablesCorps.indicesCoins;
 }
 
 /** POUR LA DEUXUEME PHASE */
 
-function modifier_ballons(pointIntersection3D, sceneThreeJs) {
+function modifier_listePoints_ballons(pointIntersection3D, sceneThreeJs) {
+    //Modifie la liste des points pour faire les ballons
     const listePoints = variablesBallons.listePoints;
 
     if(tester_deplacement_souris(pointIntersection3D.x, pointIntersection3D.y)) {
         listePoints.push(Vector2(pointIntersection3D.x, pointIntersection3D.y));
-        
     }
+}
+
+function listePoints_to_curve(sceneThreeJs) {
+    //sert juste a tracer la courbe qui montre l'historique de deplacement de la souris
+    const sceneGraph = sceneThreeJs.sceneGraph;
+    const listePoints = variablesBallons.listePoints;
+    const n = listePoints.length;
+    
+    //On commence par retirer la courbe precedente de sceneGraph
+    //const o = sceneGraph.getObjectByName("ballons_curve");
+    //sceneGraph.remove(o);
+
+    const geometry = new THREE.Geometry();
+    for(let i = 0; i < n; i++){
+        geometry.vertices.push(Vector3(listePoints[i].x, listePoints[i].y, 0));
+    }
+    const material = new THREE.LineBasicMaterial({color: 0x000000});  
+    const ballons_curve = new THREE.Line(geometry, material); // la ligne en 3D
+
+    ballons_curve.name = "ballons_curve";
+    sceneGraph.add(ballons_curve);
+}
+
+function listePoints_to_ballons(){
+    //convertir la liste des points en object ovoidal. La methode est : 
+    //pour l'instant, de maniere tres simplifiee, on extrait la longueur maximale et la position du centre
+    //par moyennage pour en faire une ellipse 
+    const position_moyenne = Vector2(0, 0);
+    const listePoints = variablesCorps.listePoints;
+
+    const n = listePoints.length;
+    for(let i=0; i < n; i++) {
+        position_moyenne.addScaledVector(listePoints[i], 1/n);
+    }
+
+    variablesCorps.listePoints = [];
 }
 
 // Demande le rendu de la scène 3D
@@ -233,7 +271,6 @@ function render(sceneThreeJs) {
 }
 
 function animate(sceneThreeJs, time) {
-
     const t = time/1000;//time in second
     render(sceneThreeJs);
 }
@@ -241,7 +278,6 @@ function animate(sceneThreeJs, time) {
 
 // Fonction de gestion d'animation
 function animationLoop(sceneThreeJs) {
-
     // Fonction JavaScript de demande d'image courante à afficher
     requestAnimationFrame(
 
@@ -250,9 +286,7 @@ function animationLoop(sceneThreeJs) {
             animate(sceneThreeJs,timeStamp); // appel de notre fonction d'animation
             animationLoop(sceneThreeJs); // relance une nouvelle demande de mise à jour
         }
-
     );
-
 }
 
 // Fonction appelée lors du redimensionnement de la fenetre
