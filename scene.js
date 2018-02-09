@@ -2,8 +2,14 @@
 
 //vertices[axe][0] stocke les indices des vertices qui ont une coordonnee 
 //negative selon l'axe "axe" et vertices[axe][1] stocke ceux qui sont positifs.
+
+//a implementer : petites spheres a cliquer pour pouvoir modifier le ballon, et qui coincident avec 
+//les extremites de la sphere. ces "handlers" se deplaceront du montant de deplacement de la souris 
+
+const handlers                         = [[[], []], [[], []], [[], []]];
+
 const indices_vertices                 = [[[], []], [[], []], [[], []]];
-const historique_modifications = [[[], []], [[], []], [[], []]];
+const historique_modifications         = [[[], []], [[], []], [[], []]];
 
 const souris = {
     dernierX: 0,
@@ -204,6 +210,10 @@ function initialiser_geometry() {
     }
 }
 
+
+//autre methode proposee par le prof qui est meilleure : on prend une matrice diagonale (x, y, z)
+//dont on modifie les coefficients en fonction de l'axe et de la ou on est, puis on applique
+//ladite matrice aux points 
 function modifier_geometry() {
     for(var axe = 0; axe < 3; axe++) {
         for(var sens = 0; sens < 2; sens++) {
