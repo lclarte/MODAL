@@ -20,8 +20,11 @@ const variablesCorps = {
     plat: true,
 };
 
+//Pour le ballon, on va tracer une ligne et on va extraire la longueur de la ligne pour decider d'ou on met 
+//le ballon et quelle longueur/largeur il aura
 const variablesBallons = {
     listePoints: [],
+    modele_ballon: null,
 };
 
 main();
@@ -110,6 +113,13 @@ function init3DObjects(sceneGraph) {
     plane.material.opacity = 0;
     plane.material.transparent = true; //les deux lignes sont necessaires 
     sceneGraph.add(plane);
+
+    init_modele_ballon();
+}
+
+//importe le modele de ballon
+function init_modele_ballon() {
+
 }
 
 
@@ -179,8 +189,10 @@ function modifier_wireframe(pointIntersection, sceneThreeJs) {
         const listePoints = variablesCorps.listePoints;
         const indicesCoins = variablesCorps.indicesCoins;
 
+        const n_dernier = listePoints.length;
 
-        if(tester_deplacement_souris(pointIntersection.x, pointIntersection.y)){
+
+        if(n_dernier === 0 || tester_deplacement_souris(listePoints[n_dernier-1], pointIntersection.x, pointIntersection.y)){
             listePoints.push(Vector2(pointIntersection.x, pointIntersection.y));
             const n = listePoints.length; //longueur APRES avoir ajouter le denrier 
             if(n >= 3) {
@@ -223,8 +235,9 @@ function lisser_listePoints() {
 function modifier_listePoints_ballons(pointIntersection3D, sceneThreeJs) {
     //Modifie la liste des points pour faire les ballons
     const listePoints = variablesBallons.listePoints;
+    const n = listePoints.length;
 
-    if(tester_deplacement_souris(pointIntersection3D.x, pointIntersection3D.y)) {
+    if(n === 0 || tester_deplacement_souris(listePoints[n-1], pointIntersection3D.x, pointIntersection3D.y) === true) {
         listePoints.push(Vector2(pointIntersection3D.x, pointIntersection3D.y));
     }
 }
@@ -234,15 +247,17 @@ function listePoints_to_curve(sceneThreeJs) {
     const sceneGraph = sceneThreeJs.sceneGraph;
     const listePoints = variablesBallons.listePoints;
     const n = listePoints.length;
-    
+    console.log(n);
+
     //On commence par retirer la courbe precedente de sceneGraph
-    //const o = sceneGraph.getObjectByName("ballons_curve");
-    //sceneGraph.remove(o);
+    const o = sceneGraph.getObjectByName("ballons_curve");
+    sceneGraph.remove(o);
 
     const geometry = new THREE.Geometry();
     for(let i = 0; i < n; i++){
         geometry.vertices.push(Vector3(listePoints[i].x, listePoints[i].y, 0));
     }
+
     const material = new THREE.LineBasicMaterial({color: 0x000000});  
     const ballons_curve = new THREE.Line(geometry, material); // la ligne en 3D
 
@@ -333,19 +348,13 @@ function tester_angle_aigu(p1, p2, p3) {
     }
 }
 
+const SEUIL_DEPLACEMENT_SOURIS = 0.2;
 
-function tester_deplacement_souris(x, y) {
+function tester_deplacement_souris(dernierPoint, x, y) {
     //On teste si la souris s'est deplacee d'assez pour qu'on modifie le wireframe
     //x et y sont la position de la souris DANS le referentiel, pas sur l'ecran$
-    const listePoints = variablesCorps.listePoints;
-
-    const n = listePoints.length;
-    if(n == 0){
-        return true;
-    }
-    const dernierPoint = listePoints[n-1];
     const d = distance(dernierPoint, Vector2(x, y));
-    return (d > 0.2);
+    return (d > SEUIL_DEPLACEMENT_SOURIS);
 }
 
 
