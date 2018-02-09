@@ -1,31 +1,16 @@
 "use strict";
 
-//cette structure constitue une enumeration pour 
-//savoir dans quelle phase de conception on est
-//actuellement.
+//vertices[axe][0] stocke les indices des vertices qui ont une coordonnee 
+//negative selon l'axe "axe" et vertices[axe][1] stocke ceux qui sont positifs.
+const indices_vertices                 = [[[], []], [[], []], [[], []]];
+const historique_modifications = [[[], []], [[], []], [[], []]];
 
-const phases = {
-    PHASE_CORPS:   0,
-    PHASE_BALLONS: 1,
-    PHASE_DETAILS: 2,
+const souris = {
+    dernierX: 0,
+    dernierY: 0,
 };
 
-let phase_actuelle = phases.PHASE_CORPS;
-
-//la structure variablesCorps va stocker les variables servant a la construction et la modification du
-//corps du vaisseau
-const variablesCorps = {
-    listePoints: [], //stocke la liste de tous les points qui constituent le corps du vaisseau
-    indicesCoins: [], //stocke les indices des elements de listePoints qui sont des coins du corps
-    plat: true,
-};
-
-//Pour le ballon, on va tracer une ligne et on va extraire la longueur de la ligne pour decider d'ou on met 
-//le ballon et quelle longueur/largeur il aura
-const variablesBallons = {
-    listePoints: [],
-    modele_ballon: null,
-};
+var geometry = null;
 
 main();
 
@@ -53,12 +38,13 @@ function main(){
     //  (Création d'un wrapper pour y passer les paramètres souhaités)
     const wrapperMouseDown = function(event) { onMouseDown(event, raycaster, screenSize, sceneThreeJs); };
     document.addEventListener( 'mousedown', wrapperMouseDown);
-    const wrapperMouseUp = function(event) {onMouseUp(event)};
+    const wrapperMouseUp = function(event) {onMouseUp(event, sceneThreeJs.sceneGraph)};
     document.addEventListener('mouseup', wrapperMouseUp);
     const wrapperMouseMove = function(event) {onMouseMove(event, raycaster, screenSize, sceneThreeJs);};
     document.addEventListener('mousemove', wrapperMouseMove);
     const wrapperKeyDown = function(event) {onKeyDown(event, sceneThreeJs)};
     document.addEventListener('keydown', wrapperKeyDown);
+  
 
     // *************************** //
     // Lancement de l'animation
@@ -67,61 +53,40 @@ function main(){
 }
 
 
-function onMouseUp(event) {
-    if(phase_actuelle == phases.PHASE_BALLONS) {
-        listePoints_to_ballons();
+function onMouseUp(event, sceneGraph) {
+    const delta_souris = [event.clientX - souris.dernierX, event.clientY - souris.dernierY];
+    var axe_a_modifier = 1;
+    if(Math.abs(delta_souris[0]) > Math.abs(delta_souris[1])) {
+        axe_a_modifier = 0;
     }
+    const orientation_modification = positif(delta_souris[axe_a_modifier]);
+
+    historique_modifications[axe_a_modifier][orientation_modification].push(Math.abs(delta_souris[axe_a_modifier])/FACTEUR_DISTORSION);
+    console.log(historique_modifications);
+    modifier_sphere(sceneGraph);
 }
 
 
 function onMouseDown(event, raycaster, screenSize, sceneThreeJs) {
+    souris.dernierX = event.clientX;
+    souris.dernierY = event.clientY;
+    //unite = pixels sur l'ecran
+
+    console.log(souris.dernierX, '/', souris.dernierY);
 }
 
+const FACTEUR_DISTORSION = 200;
+
 function onMouseMove(event, raycaster, screenSize, sceneThreeJs) {
-    if(phase_actuelle === phases.PHASE_CORPS && event.buttons === 1) {
-        const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs);
-        modifier_wireframe(pointIntersection, sceneThreeJs);
-    }
-    else if (phase_actuelle === phases.PHASE_BALLONS && event.buttons === 1){
-        const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs);
-        modifier_listePoints_ballons(pointIntersection, sceneThreeJs);
-        listePoints_to_curve(sceneThreeJs);
-    }
 }
 
 function onKeyDown(event, sceneThreeJs) {
-    const altPressed = event.altKey;
-    if(variablesCorps.plat === true && event.shiftKey === true) {
-        //dans un premier temps, il faut verifier si le dernier point s
-        //forme un angle droit avec le point 0 
-        calculer_dernier_angle_droit(sceneThreeJs);
-
-        //sceneThreeJs.controls.enabled = true;
-        
-        variablesCorps.plat = false;
-        extruder_listePoints(sceneThreeJs);
-        const wf = sceneThreeJs.sceneGraph.getObjectByName("wireframe");
-        sceneThreeJs.sceneGraph.remove(wf);
-
-        phase_actuelle = phases.PHASE_BALLONS;
-    }
 }
 
 function init3DObjects(sceneGraph) {
-    const planeGeometry = primitive.Quadrangle(Vector3(-10, -10, 0), Vector3(-10, 10, 0), Vector3(10, 10, 0), Vector3(10, -10, 0));
-    const plane = new THREE.Mesh(planeGeometry, MaterialRGB(2, 2, 2));
-    plane.material.opacity = 0;
-    plane.material.transparent = true; //les deux lignes sont necessaires 
-    sceneGraph.add(plane);
-
-    init_modele_ballon();
+    initialiser_geometry();
+    initialiser_sphere(sceneGraph);
 }
-
-//importe le modele de ballon
-function init_modele_ballon() {
-
-}
-
 
 // Fonction d'initialisation d'une scène 3D sans objets 3D
 //  Création d'un graphe de scène et ajout d'une caméra et d'une lumière.
@@ -143,141 +108,6 @@ function initEmptyScene(sceneThreeJs) {
     sceneThreeJs.controls.enabled = false;
 
     window.addEventListener('resize', function(event){onResize(sceneThreeJs);}, false);
-}
-
-
-function calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs) {
-    const sceneGraph = sceneThreeJs.sceneGraph;
-    const camera     = sceneThreeJs.camera;
-
-    const xPixel = event.clientX;
-    const yPixel = event.clientY;
-
-    const x =  2*xPixel/screenSize.w - 1; //(entre -1 et 1)
-    const y = -2*yPixel/screenSize.h + 1;
-
-    raycaster.setFromCamera(Vector2(x, y), camera);
-    const intersects = raycaster.intersectObjects(sceneGraph.children);
-    const intersection = intersects[0];
-    const pointIntersection = intersection.point.clone();
-
-    return pointIntersection;
-}
-
-/*
-POUR LA PHASE UNE 
-*/
-
-function calculer_dernier_angle_droit(sceneThreeJs) {
-        const listePoints = variablesCorps.listePoints;
-        const n           =  listePoints.length;
-        const p1          = listePoints[n-2];
-        const p2          = listePoints[n-1];
-        const p3          = listePoints[0];
-
-        if(tester_angle_aigu(p1, p2, p3)) {
-            variablesCorps.indicesCoins.push(n-1);
-            const ptAngle = listePoints[n-1];
-            console.log(variablesCorps.indicesCoins);
-            sceneThreeJs.sceneGraph.add(creerPoint(Vector3(ptAngle.x, ptAngle.y, 0)));
-        }
-        
-}
-
-function modifier_wireframe(pointIntersection, sceneThreeJs) {
-        const sceneGraph = sceneThreeJs.sceneGraph;
-        const listePoints = variablesCorps.listePoints;
-        const indicesCoins = variablesCorps.indicesCoins;
-
-        const n_dernier = listePoints.length;
-
-
-        if(n_dernier === 0 || tester_deplacement_souris(listePoints[n_dernier-1], pointIntersection.x, pointIntersection.y)){
-            listePoints.push(Vector2(pointIntersection.x, pointIntersection.y));
-            const n = listePoints.length; //longueur APRES avoir ajouter le denrier 
-            if(n >= 3) {
-                const p1 = listePoints[n-3];
-                const p2 = listePoints[n-2];
-                const p3 = listePoints[n-1];
-                if(tester_angle_aigu(p1, p2, p3)) {
-                    const n = listePoints.length;
-                    const ptAngle = listePoints[n-2];
-                    indicesCoins.push(n-2);
-                    console.log(indicesCoins)
-                    sceneGraph.add(creerPoint(Vector3(ptAngle.x, ptAngle.y, 0)));
-                }
-            }
-        }
-        //sceneGraph.add(creerPoint(pointIntersection)); cette fonction ajoute les points
-        //sur le wireframe mais en vrai on s'en bat les couilles donc on l'enleve
-
-        const objet = sceneGraph.getObjectByName("wireframe");
-        sceneGraph.remove(objet);
-
-        const curveShape = new THREE.Shape(listePoints);
-        const epaisseur = 0.1;
-
-        //cette etape convertit la liste de points en objet 3D
-        const geometryWireframe = new THREE.ShapeGeometry(curveShape);
-        const materialWireframe = new THREE.MeshBasicMaterial({color:0xff0000, wireframe: true, wireframeLinewidth: 2});
-        const objectWireframe = new THREE.Mesh(geometryWireframe, materialWireframe);
-        objectWireframe.position.set(0, 0, 0);
-        objectWireframe.name = "wireframe";
-        sceneGraph.add(objectWireframe);  
-
-}
-
-function lisser_listePoints() {
-}
-
-/** POUR LA DEUXUEME PHASE */
-
-function modifier_listePoints_ballons(pointIntersection3D, sceneThreeJs) {
-    //Modifie la liste des points pour faire les ballons
-    const listePoints = variablesBallons.listePoints;
-    const n = listePoints.length;
-
-    if(n === 0 || tester_deplacement_souris(listePoints[n-1], pointIntersection3D.x, pointIntersection3D.y) === true) {
-        listePoints.push(Vector2(pointIntersection3D.x, pointIntersection3D.y));
-    }
-}
-
-function listePoints_to_curve(sceneThreeJs) {
-    //sert juste a tracer la courbe qui montre l'historique de deplacement de la souris
-    const sceneGraph = sceneThreeJs.sceneGraph;
-    const listePoints = variablesBallons.listePoints;
-    const n = listePoints.length;
-    console.log(n);
-
-    //On commence par retirer la courbe precedente de sceneGraph
-    const o = sceneGraph.getObjectByName("ballons_curve");
-    sceneGraph.remove(o);
-
-    const geometry = new THREE.Geometry();
-    for(let i = 0; i < n; i++){
-        geometry.vertices.push(Vector3(listePoints[i].x, listePoints[i].y, 0));
-    }
-
-    const material = new THREE.LineBasicMaterial({color: 0x000000});  
-    const ballons_curve = new THREE.Line(geometry, material); // la ligne en 3D
-
-    ballons_curve.name = "ballons_curve";
-    sceneGraph.add(ballons_curve);
-}
-
-function listePoints_to_ballons(){
-    //convertir la liste des points en object ovoidal. La methode est : 
-    //pour l'instant, de maniere tres simplifiee, on extrait la longueur maximale et la position du centre
-    //par moyennage pour en faire une ellipse 
-    const position_moyenne = Vector2(0, 0);
-    const listePoints = variablesCorps.listePoints;
-
-    const n = listePoints.length;
-    for(let i=0; i < n; i++) {
-        position_moyenne.addScaledVector(listePoints[i], 1/n);
-    }
-
-    variablesCorps.listePoints = [];
 }
 
 // Demande le rendu de la scène 3D
@@ -329,36 +159,6 @@ function MaterialRGB(r,g,b) {
 }
 
 /*
-
-Fonctions utilitaires permettant de verifier certaines proprietes geometriques 
-
-*/
-
-const SEUIL_ANGLE_AIGU = 1.0;
-
-function tester_angle_aigu(p1, p2, p3) { 
-    //Fonction a appeler pour tester si le dernier point qu'on a 
-    //ajoute forme un angle aigu avec les deux precedents
-    const a = angle(p1, p2, p3);
-    if(Math.abs(a) > SEUIL_ANGLE_AIGU) {
-        return true;
-    }
-    else{
-        return false;
-    }
-}
-
-const SEUIL_DEPLACEMENT_SOURIS = 0.2;
-
-function tester_deplacement_souris(dernierPoint, x, y) {
-    //On teste si la souris s'est deplacee d'assez pour qu'on modifie le wireframe
-    //x et y sont la position de la souris DANS le referentiel, pas sur l'ecran$
-    const d = distance(dernierPoint, Vector2(x, y));
-    return (d > SEUIL_DEPLACEMENT_SOURIS);
-}
-
-
-/*
 Fonctions utilitaires servant a diverses choses
 */
 function creerPoint(v) {
@@ -367,41 +167,74 @@ function creerPoint(v) {
     return sphere;
 }
 
-function extruder_listePoints(sceneThreeJs) {
-    const sceneGraph = sceneThreeJs.sceneGraph;
-    const listePoints = variablesCorps.listePoints;
+function initialiser_sphere(sceneGraph) {
+    
+    var material = MaterialRGB(0.1, 0.1, 0.1);
 
-    const curveShape = new THREE.Shape(listePoints);
+    var sphere = new THREE.Mesh(geometry, material);
+    sphere.position.set(0, 0, 0);
+    sphere.name = "sphere";
 
-    let epaisseur = 1;
-    //modifier les parametres d'extrusion pour que la largeur s'adapte a la longueur
-    const extrudeSettings = {amount: epaisseur, bevelEnabled:false};
-    const extrudeGeometry = new THREE.ExtrudeBufferGeometry(curveShape, extrudeSettings);
-    const extrudeObject   = new THREE.Mesh(extrudeGeometry, MaterialRGB(1, 1, 1));
-    extrudeObject.name = "corps";
-    sceneGraph.add(extrudeObject);
+    sceneGraph.add(sphere);
 }
 
-function angle(p1, p2, p3) {
-    //Ici, on a des points de dimension 2
-    const v1 = [p2.x - p1.x, p2.y - p1.y];
-    const v2 = [p3.x - p2.x, p3.y - p2.y];
-    return Math.acos(dot(v1, v2)/Math.sqrt((dot(v1, v1)*dot(v2, v2)))); 
+function modifier_sphere(sceneGraph) {
+    //Utilise la variable globale historique_modifications
+    detruire_sphere(sceneGraph);
+
+    initialiser_geometry();
+    modifier_geometry();
+    initialiser_sphere(sceneGraph);
 }
 
-function dot(v1, v2) {
-    let product = 0;
-    for(var i = 0; i < v1.length; i++) {
-        product += v1[i]*v2[i];
+function detruire_sphere(sceneGraph) {
+    const object = sceneGraph.getObjectByName("sphere");
+    sceneGraph.remove(object);
+}
+
+function initialiser_geometry() {
+    geometry = new THREE.SphereGeometry(1, 32, 32);
+    geometry.vertices.matrixAutoUpdate = false;
+    const vertices = geometry.vertices;
+    for(var i = 0; i < vertices.length; i++) {
+        const v = vertices[i];
+        indices_vertices[2][positif(v.z)].push(i);
+        indices_vertices[0][positif(v.x)].push(i);
+        indices_vertices[1][positif(v.y)].push(i);
     }
-    return product;
 }
 
-function norme(v) {
-    return Math.sqrt(dot(v, v));
+function modifier_geometry() {
+    for(var axe = 0; axe < 3; axe++) {
+        for(var sens = 0; sens < 2; sens++) {
+            //on est sur un axe donnee, reste a parcourir l'historique de transformations
+            for(var modif = 0; modif < historique_modifications[axe][sens].length; modif++) {
+                //on est sur une modif donneees
+                for(var i = 0; i < indices_vertices[axe][sens].length; i++) {
+                    const indice = indices_vertices[axe][sens][i];
+                    const facteur = historique_modifications[axe][sens][modif]
+                    if(axe === 0) {
+                        geometry.vertices[indice].x = geometry.vertices[indice].x * facteur;
+                    }
+                    else if(axe === 1){
+                        geometry.vertices[indice].y = geometry.vertices[indice].y * facteur;
+                    }
+                    else if(axe === 2) {
+                        geometry.vertices[indice].z = geometry.vertices[indice].z * facteur;
+                    }
+                
+                }
+            }
+
+        }
+    }
 }
 
-function distance(p1, p2) {
-    const v = [p2.x - p1.x, p2.y - p1.y];
-    return norme(v);
+function positif(x) {
+    if(x >= 0) {
+        return 1;
+    }
+    else{
+        return 0;
+    }
 }
