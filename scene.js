@@ -9,7 +9,7 @@
 const RAYON = 0.1;
 
 const handlers                         = [[[], []], [[], []], [[], []]];
-const position_handlers                = [[Vector3(-1, 0, 0), Vector3(1, 0, 0)],
+var position_handlers                = [[Vector3(-1, 0, 0), Vector3(1, 0, 0)],
                                             [Vector3(0, -1, 0), Vector3(0, 1, 0)],
                                             [Vector3(0, 0, -1), Vector3(0, 0, 1)]
                                             ];
@@ -207,22 +207,10 @@ function initialiser_handlers(sceneThreeJs) {
     for(var axe=0;axe<3; axe++) {
         for(var positif=0; positif<2; positif++) {
             var objet = creerPoint(position_handlers[axe][positif]);
-            objet.matrixAutoUpdate = false;
             handlers[axe][positif] = objet;
 
             sceneThreeJs.pickableObjects.add(objet);
-        }
-    }
-
-}
-
-function detruire_handlers(sceneThreeJs) {
-
-    for(var axe=0; axe<3; axe++) {
-        for(var positif=0; positif<2; positif++) {
-            var objet = handlers[axe][positif];
-            sceneThreeJs.pickableObjects.remove(objet);
-            handlers[axe][positif] = null;
+            console.log(objet);
         }
     }
 
@@ -233,7 +221,6 @@ function modifier_sphere(sceneThreeJs) {
 
     //Utilise la variable globale historique_modifications
     detruire_sphere(sceneGraph);
-    detruire_handlers(sceneThreeJs);
 
     initialiser_handlers(sceneThreeJs);
     initialiser_geometry();
@@ -277,11 +264,8 @@ function modifier_geometry() {
                 const facteur = historique_modifications[axe][sens][modif];
                 matrice_modifications.elements[4*axe] *= facteur;
 
-                var position_apres = Vector3(0, 0, 0);
-                position_apres.copy(position_handlers[axe][sens]);
-                position_apres.applyMatrix3(matrice_modifications);
-                console.log(position_apres);
-                handlers[axe][sens].matrix.setPosition(position_apres);
+                handlers[axe][sens].position.set(0, 0, 0);
+                handlers[axe][sens].updateMatrix();
 
                 for(var i = 0; i < indices_vertices[axe][sens].length; i++) {
                     const indice = indices_vertices[axe][sens][i];
