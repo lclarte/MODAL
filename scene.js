@@ -14,7 +14,6 @@ var position_handlers                = [[Vector3(-1, 0, 0), Vector3(1, 0, 0)],
                                             [Vector3(0, 0, -1), Vector3(0, 0, 1)]
                                             ];
 const indices_vertices                 = [[[], []], [[], []], [[], []]];
-const historique_modifications         = [[[], []], [[], []], [[], []]];
 
 const souris = {
     dernierX: 0,
@@ -57,11 +56,8 @@ function main(){
     const wrapperKeyDown = function(event) {onKeyDown(event, sceneThreeJs)};
     document.addEventListener('keydown', wrapperKeyDown);
   
-    historique_modifications[0][0].push(0.0);
-    //historique_modifications[0][0].push(1.0);
+    handlers[0][0].position.set(-1.5, 0, 0);
     modifier_sphere(sceneThreeJs);
-    console.log(handlers[0][0]);
-
     // *************************** //
     // Lancement de l'animation
     // *************************** //
@@ -70,18 +66,6 @@ function main(){
 
 
 function onMouseUp(event, sceneThreeJs) {
-    /*
-    const sceneGraph = sceneThreeJs.sceneGraph;
-
-    const delta_souris = [event.clientX - souris.dernierX, event.clientY - souris.dernierY];
-    var axe_a_modifier = 1;
-    if(Math.abs(delta_souris[0]) > Math.abs(delta_souris[1])) {
-        axe_a_modifier = 0;
-    }
-    const orientation_modification = positif(delta_souris[axe_a_modifier]);
-
-    historique_modifications[axe_a_modifier][orientation_modification].push(Math.abs(delta_souris[axe_a_modifier])/FACTEUR_DISTORSION);
-    modifier_sphere(sceneThreeJs);*/
 }
 
 
@@ -192,7 +176,7 @@ function creerPoint(v) {
 }
 
 function initialiser_sphere(sceneGraph) {
-    
+    //creee la sphere avec geometry initialise et la place en (0, 0, 0)
     var material = MaterialRGB(0.1, 0.1, 0.1);
 
     var sphere = new THREE.Mesh(geometry, material);
@@ -206,11 +190,13 @@ function initialiser_handlers(sceneThreeJs) {
 
     for(var axe=0;axe<3; axe++) {
         for(var positif=0; positif<2; positif++) {
-            var objet = creerPoint(position_handlers[axe][positif]);
+            const pos = position_handlers[axe][positif];
+            var objet = creerPoint(Vector3(0, 0, 0));
+            objet.position.set(pos.x, pos.y, pos.z); //ON EST OBLIGE DE FAIRE COMME CA 
+
             handlers[axe][positif] = objet;
 
             sceneThreeJs.pickableObjects.add(objet);
-            console.log(objet);
         }
     }
 
@@ -219,13 +205,12 @@ function initialiser_handlers(sceneThreeJs) {
 function modifier_sphere(sceneThreeJs) {
     const sceneGraph = sceneThreeJs.sceneGraph;
 
-    //Utilise la variable globale historique_modifications
+    //Utilise la variable globale 
     detruire_sphere(sceneGraph);
-
-    initialiser_handlers(sceneThreeJs);
     initialiser_geometry();
     modifier_geometry();
-    initialiser_sphere(sceneGraph);
+
+    initialiser_sphere(sceneGraph); //On ajoute la sphere a la fin.
 }
 
 function detruire_sphere(sceneGraph) {
@@ -234,6 +219,14 @@ function detruire_sphere(sceneGraph) {
 }
 
 function initialiser_geometry() {
+    for(var axe = 0; axe < 3; axe ++) {
+        for(var p = 0; p < 2; p ++) {
+            indices_vertices[axe][p] = []; //bien penser a reinitialiser les 
+            //tableaux sinon il y aura des doublons dans les listes d'indices et les positions serotn
+            //mistes a jour plusieurs fois. Alternative : verifier l'absence' d'un indice avant de l'ajouter
+        }
+    }
+
     geometry = new THREE.SphereGeometry(1.0, 32, 32);
     geometry.vertices.matrixAutoUpdate = false;
     const vertices = geometry.vertices;
@@ -242,7 +235,7 @@ function initialiser_geometry() {
         indices_vertices[0][positif(v.x)].push(i);
         indices_vertices[1][positif(v.y)].push(i);
         indices_vertices[2][positif(v.z)].push(i);
-    }
+    }   
 }
 
 
@@ -252,27 +245,20 @@ function initialiser_geometry() {
 //dont on modifie les coefficients en fonction de l'axe et de la ou on est, puis on applique
 //ladite matrice aux points 
 function modifier_geometry() {
+    var max = 0;
     for(var axe = 0; axe < 3; axe++) {
-        for(var sens = 0; sens < 2; sens++) {
-            
-            var matrice_modifications = new THREE.Matrix3();
-            matrice_modifications.identity();
-            
-            //on est sur un axe donnee, reste a parcourir l'historique de transformations
-            for(var modif = 0; modif < historique_modifications[axe][sens].length; modif++) {
-            //on est sur une modif donneees
-                const facteur = historique_modifications[axe][sens][modif];
-                matrice_modifications.elements[4*axe] *= facteur;
-
-                handlers[axe][sens].position.set(0, 0, 0);
-                handlers[axe][sens].updateMatrix();
-
-                for(var i = 0; i < indices_vertices[axe][sens].length; i++) {
-                    const indice = indices_vertices[axe][sens][i];
-                    geometry.vertices[indice].applyMatrix3(matrice_modifications);              
+        for(var positif = 0; positif < 2; positif ++) {
+            var p_handler = handlers[axe][positif].position;
+            console.log(indices_vertices[axe][positif].length);
+            for(var indice = 0; indice < indices_vertices[axe][positif].length; indice++) {
+                const i = indices_vertices[axe][positif][indice];
+                const vp = geometry.vertices[i];
+                if(axe === 0) {vp.x = vp.x*Math.abs(p_handler.x);
                 }
+                if(axe === 1) {vp.y = vp.y*Math.abs(p_handler.y);}      
+                                                                                                
+                if(axe === 2) {vp.z = vp.z*Math.abs(p_handler.z);}
             }
-
         }
     }
 }
@@ -281,6 +267,7 @@ function positif(x) {
     if(x >= 0) {
         return 1;
     }
+
     else{
         return 0;
     }
