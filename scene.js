@@ -98,7 +98,11 @@ function init3DObjects(sceneThreeJs) {
     sceneGraph.add(plane);
     sceneThreeJs.pickableObjects.push(plane);
 
-    creer_module(Vector3(0, 0, 0), sceneThreeJs);
+    //creer_module(Vector3(0, 0, 0), sceneThreeJs);
+
+    let o = new THREE.Object3D();
+    loadOBJ('modeles/coque_avant.obj', o);
+    sceneThreeJs.sceneGraph.add(o);
 }
 
 // Fonction d'initialisation d'une scène 3D sans objets 3D
@@ -341,4 +345,15 @@ function argmin(tableau) {
         }
     }
     return indice_min;
+}
+
+//Fonctions de chargement des .OBJ
+function loadOBJ(nom_fichier, objet3D) {
+    //objet3D est l'objet qui va contenir l'objet du ficheir .obj
+    const loader = new THREE.OBJLoader();
+    loader.load(nom_fichier,
+        function(objet) {
+            objet3D.copy(objet, true); //utilser cette methode pour copier l'objet charge
+        });
+
 }
