@@ -1,5 +1,7 @@
 "use strict";
 
+//remarque importante : on peut ajouter des champs 
+
 //cette structure constitue une enumeration pour 
 //savoir dans quelle phase de conception on est
 //actuellement.
@@ -7,24 +9,14 @@
 const phases = {
     PHASE_CORPS:   0,
     PHASE_BALLONS: 1,
-    PHASE_DETAILS: 2,
+    PHASE_DETAILS: 2,  
 };
 
 let phase_actuelle = phases.PHASE_CORPS;
 
-//la structure variablesCorps va stocker les variables servant a la construction et la modification du
-//corps du vaisseau
 const variablesCorps = {
-    listePoints: [], //stocke la liste de tous les points qui constituent le corps du vaisseau
-    indicesCoins: [], //stocke les indices des elements de listePoints qui sont des coins du corps
-    plat: true,
-};
-
-//Pour le ballon, on va tracer une ligne et on va extraire la longueur de la ligne pour decider d'ou on met 
-//le ballon et quelle longueur/largeur il aura
-const variablesBallons = {
-    listePoints: [],
-    modele_ballon: null,
+    modules: [],
+    picked_handler: null,
 };
 
 main();
@@ -37,10 +29,11 @@ function main(){
         camera: null,
         renderer: null,
         controls: null,
+        pickableObjects: [],
     };
 
     initEmptyScene(sceneThreeJs);
-    init3DObjects(sceneThreeJs.sceneGraph);
+    init3DObjects(sceneThreeJs);
 
     const raycaster = new THREE.Raycaster();
 
@@ -59,6 +52,8 @@ function main(){
     document.addEventListener('mousemove', wrapperMouseMove);
     const wrapperKeyDown = function(event) {onKeyDown(event, sceneThreeJs)};
     document.addEventListener('keydown', wrapperKeyDown);
+    const wrapperKeyUp = function(event) {onKeyUp(event, sceneThreeJs)};
+    document.addEventListener('keyup', wrapperKeyUp);
 
     // *************************** //
     // Lancement de l'animation
@@ -68,60 +63,43 @@ function main(){
 
 
 function onMouseUp(event) {
-    if(phase_actuelle == phases.PHASE_BALLONS) {
-        listePoints_to_ballons();
-    }
 }
 
-
 function onMouseDown(event, raycaster, screenSize, sceneThreeJs) {
+    const intersects = calculer_intersects(event, raycaster, screenSize, sceneThreeJs);
+    if(intersects.length > 0 && intersects[0].object.name ===    "handler") {
+        variablesCorps.picked_handler = intersects[0].object; //ATTENTION, ICI ON FAIT L'HYPOTHESE QUE L'OBJET SELECTIONNE EST UN HANDLER
+    }
 }
 
 function onMouseMove(event, raycaster, screenSize, sceneThreeJs) {
-    if(phase_actuelle === phases.PHASE_CORPS && event.buttons === 1) {
+    if(variablesCorps.picked_handler != null) {
         const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs);
-        modifier_wireframe(pointIntersection, sceneThreeJs);
-    }
-    else if (phase_actuelle === phases.PHASE_BALLONS && event.buttons === 1){
-        const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs);
-        modifier_listePoints_ballons(pointIntersection, sceneThreeJs);
-        listePoints_to_curve(sceneThreeJs);
+        //console.log(determiner_type_modification(variablesCorps.picked_handler.module, pointIntersection));
+        modifier_module(variablesCorps.picked_handler.module, pointIntersection, sceneThreeJs);
     }
 }
 
 function onKeyDown(event, sceneThreeJs) {
-    const altPressed = event.altKey;
-    if(variablesCorps.plat === true && event.shiftKey === true) {
-        //dans un premier temps, il faut verifier si le dernier point s
-        //forme un angle droit avec le point 0 
-        calculer_dernier_angle_droit(sceneThreeJs);
-
-        //sceneThreeJs.controls.enabled = true;
-        
-        variablesCorps.plat = false;
-        extruder_listePoints(sceneThreeJs);
-        const wf = sceneThreeJs.sceneGraph.getObjectByName("wireframe");
-        sceneThreeJs.sceneGraph.remove(wf);
-
-        phase_actuelle = phases.PHASE_BALLONS;
-    }
 }
 
-function init3DObjects(sceneGraph) {
-    const planeGeometry = primitive.Quadrangle(Vector3(-10, -10, 0), Vector3(-10, 10, 0), Vector3(10, 10, 0), Vector3(10, -10, 0));
-    const plane = new THREE.Mesh(planeGeometry, MaterialRGB(2, 2, 2));
+function onKeyUp(event, sceneThreeJs) {
+    variablesCorps.picked_handler = null;
+}
+
+function init3DObjects(sceneThreeJs) {
+    const sceneGraph = sceneThreeJs.sceneGraph;
+               
+    const planeGeometryZ = primitive.Quadrangle(Vector3(-100, -100, 0), Vector3(-100, 100, 0), Vector3(100, 100, 0), Vector3(100, -100, 0));
+    const plane = new THREE.Mesh(planeGeometryZ, MaterialRGB(2, 2, 2));
     plane.material.opacity = 0;
     plane.material.transparent = true; //les deux lignes sont necessaires 
+    plane.name = "planZ"; //Z est la normale a ce plan => plan XY
     sceneGraph.add(plane);
+    sceneThreeJs.pickableObjects.push(plane);
 
-    init_modele_ballon();
+    creer_module(Vector3(0, 0, 0), sceneThreeJs);
 }
-
-//importe le modele de ballon
-function init_modele_ballon() {
-
-}
-
 
 // Fonction d'initialisation d'une scène 3D sans objets 3D
 //  Création d'un graphe de scène et ajout d'une caméra et d'une lumière.
@@ -134,7 +112,7 @@ function initEmptyScene(sceneThreeJs) {
     //la camera est situee sur l'axe z 
     sceneThreeJs.camera.lookAt(0, 0, 0);
     sceneInit.insertAmbientLight(sceneThreeJs.sceneGraph);
-    sceneInit.insertLight(sceneThreeJs.sceneGraph,Vector3(1,2,2));
+    sceneInit.insertLight(sceneThreeJs.sceneGraph,Vector3(0, 0, 5));
 
     sceneThreeJs.renderer = sceneInit.createRenderer();
     sceneInit.insertRenderInHtml(sceneThreeJs.renderer.domElement);
@@ -145,8 +123,7 @@ function initEmptyScene(sceneThreeJs) {
     window.addEventListener('resize', function(event){onResize(sceneThreeJs);}, false);
 }
 
-
-function calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs) {
+function calculer_intersects(event, raycaster, screenSize, sceneThreeJs) {
     const sceneGraph = sceneThreeJs.sceneGraph;
     const camera     = sceneThreeJs.camera;
 
@@ -157,127 +134,76 @@ function calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs)
     const y = -2*yPixel/screenSize.h + 1;
 
     raycaster.setFromCamera(Vector2(x, y), camera);
-    const intersects = raycaster.intersectObjects(sceneGraph.children);
-    const intersection = intersects[0];
-    const pointIntersection = intersection.point.clone();
-
-    return pointIntersection;
+    const intersects = raycaster.intersectObjects(sceneThreeJs.pickableObjects, true);
+    return intersects;
 }
 
-/*
-POUR LA PHASE UNE 
-*/
+function calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs) {
 
-function calculer_dernier_angle_droit(sceneThreeJs) {
-        const listePoints = variablesCorps.listePoints;
-        const n           =  listePoints.length;
-        const p1          = listePoints[n-2];
-        const p2          = listePoints[n-1];
-        const p3          = listePoints[0];
+    const intersects = calculer_intersects(event, raycaster, screenSize, sceneThreeJs);
 
-        if(tester_angle_aigu(p1, p2, p3)) {
-            variablesCorps.indicesCoins.push(n-1);
-            const ptAngle = listePoints[n-1];
-            console.log(variablesCorps.indicesCoins);
-            sceneThreeJs.sceneGraph.add(creerPoint(Vector3(ptAngle.x, ptAngle.y, 0)));
-        }
-        
+    if(intersects.length > 0) {
+        const intersection = intersects[0];    
+        const pointIntersection = intersection.point.clone();
+        return pointIntersection;
+    }
+    return null;
 }
 
-function modifier_wireframe(pointIntersection, sceneThreeJs) {
-        const sceneGraph = sceneThreeJs.sceneGraph;
-        const listePoints = variablesCorps.listePoints;
-        const indicesCoins = variablesCorps.indicesCoins;
+//Fonction qui cree un module -> mesh + un handler
+function creer_module(centre, sceneThreeJs){
+    const TAILLE_MODULE = 1.0;
 
-        const n_dernier = listePoints.length;
+    const nouveau_module = new THREE.Group();
+    variablesCorps.modules.push(nouveau_module);
 
+    nouveau_module.voisin_gauche = null;
+    nouveau_module.voisin_droit  = null;
+    nouveau_module.voisin_haut   = null;
+    nouveau_module.voisin_bas    = null;
 
-        if(n_dernier === 0 || tester_deplacement_souris(listePoints[n_dernier-1], pointIntersection.x, pointIntersection.y)){
-            listePoints.push(Vector2(pointIntersection.x, pointIntersection.y));
-            const n = listePoints.length; //longueur APRES avoir ajouter le denrier 
-            if(n >= 3) {
-                const p1 = listePoints[n-3];
-                const p2 = listePoints[n-2];
-                const p3 = listePoints[n-1];
-                if(tester_angle_aigu(p1, p2, p3)) {
-                    const n = listePoints.length;
-                    const ptAngle = listePoints[n-2];
-                    indicesCoins.push(n-2);
-                    console.log(indicesCoins)
-                    sceneGraph.add(creerPoint(Vector3(ptAngle.x, ptAngle.y, 0)));
-                }
-            }
-        }
-        //sceneGraph.add(creerPoint(pointIntersection)); cette fonction ajoute les points
-        //sur le wireframe mais en vrai on s'en bat les couilles donc on l'enleve
+    const geometry = primitive.Cube(Vector3(0, 0, 0), TAILLE_MODULE);
+    nouveau_module.mesh = new THREE.Mesh(geometry, MaterialRGB(0.5, 0.5, 0.5));
 
-        const objet = sceneGraph.getObjectByName("wireframe");
-        sceneGraph.remove(objet);
+    nouveau_module.handler = creerPoint(Vector3(0, 0, 0), 0.2);
+    nouveau_module.handler.translateZ(-TAILLE_MODULE);
+    nouveau_module.handler.module = nouveau_module;
+    nouveau_module.handler.name = "handler";
 
-        const curveShape = new THREE.Shape(listePoints);
-        const epaisseur = 0.1;
+    nouveau_module.position.set(centre.x, centre.y, centre.z);
 
-        //cette etape convertit la liste de points en objet 3D
-        const geometryWireframe = new THREE.ShapeGeometry(curveShape);
-        const materialWireframe = new THREE.MeshBasicMaterial({color:0xff0000, wireframe: true, wireframeLinewidth: 2});
-        const objectWireframe = new THREE.Mesh(geometryWireframe, materialWireframe);
-        objectWireframe.position.set(0, 0, 0);
-        objectWireframe.name = "wireframe";
-        sceneGraph.add(objectWireframe);  
+    nouveau_module.add(nouveau_module.mesh);
+    nouveau_module.add(nouveau_module.handler);
 
+    sceneThreeJs.sceneGraph.add(nouveau_module);
+    sceneThreeJs.pickableObjects.push(nouveau_module.handler);
 }
 
-function lisser_listePoints() {
-}
+function modifier_module(module, pointIntersection, sceneThreeJs) {
+    const pos = module.position;
+    const reference = Vector2(module.position.x, module.position.y);
 
-/** POUR LA DEUXUEME PHASE */
+    const type_modification = determiner_type_modification(module, pointIntersection);
 
-function modifier_listePoints_ballons(pointIntersection3D, sceneThreeJs) {
-    //Modifie la liste des points pour faire les ballons
-    const listePoints = variablesBallons.listePoints;
-    const n = listePoints.length;
-
-    if(n === 0 || tester_deplacement_souris(listePoints[n-1], pointIntersection3D.x, pointIntersection3D.y) === true) {
-        listePoints.push(Vector2(pointIntersection3D.x, pointIntersection3D.y));
+    if(type_modification === 1) {
+        creer_module(Vector3(pos.x, pos.y + 1.0, pos.z), sceneThreeJs);
+    }
+    if(type_modification === 2) {
+        creer_module(Vector3(pos.x-1.0, pos.y, pos.z), sceneThreeJs);
     }
 }
 
-function listePoints_to_curve(sceneThreeJs) {
-    //sert juste a tracer la courbe qui montre l'historique de deplacement de la souris
-    const sceneGraph = sceneThreeJs.sceneGraph;
-    const listePoints = variablesBallons.listePoints;
-    const n = listePoints.length;
-    console.log(n);
-
-    //On commence par retirer la courbe precedente de sceneGraph
-    const o = sceneGraph.getObjectByName("ballons_curve");
-    sceneGraph.remove(o);
-
-    const geometry = new THREE.Geometry();
-    for(let i = 0; i < n; i++){
-        geometry.vertices.push(Vector3(listePoints[i].x, listePoints[i].y, 0));
+//determine si on doit ajouter un autre module a gauche, droite, en haut, en bas, etc.
+function determiner_type_modification(module, pointIntersection) {
+    const m_pos             = module.position;
+    const point_voronoi     = Vector2(pointIntersection.x - m_pos.x, pointIntersection.y - m_pos.y);
+    const sommets_voronoi   = [Vector2(0, 0), Vector2(0.0, 2.0), Vector2(-2.0, 0.0), Vector2(0, -2), Vector2(2.0, 0.0)];
+    //les sommets sont listes dans l'ordre : centre, haut, droite, bas, gauche
+    const distances_voronoi = [];
+    for(let indice = 0; indice < 5; indice++) {
+        distances_voronoi[indice] = distance(point_voronoi, sommets_voronoi[indice]);
     }
-
-    const material = new THREE.LineBasicMaterial({color: 0x000000});  
-    const ballons_curve = new THREE.Line(geometry, material); // la ligne en 3D
-
-    ballons_curve.name = "ballons_curve";
-    sceneGraph.add(ballons_curve);
-}
-
-function listePoints_to_ballons(){
-    //convertir la liste des points en object ovoidal. La methode est : 
-    //pour l'instant, de maniere tres simplifiee, on extrait la longueur maximale et la position du centre
-    //par moyennage pour en faire une ellipse 
-    const position_moyenne = Vector2(0, 0);
-    const listePoints = variablesCorps.listePoints;
-
-    const n = listePoints.length;
-    for(let i=0; i < n; i++) {
-        position_moyenne.addScaledVector(listePoints[i], 1/n);
-    }
-
-    variablesCorps.listePoints = [];
+    return argmin(distances_voronoi);
 }
 
 // Demande le rendu de la scène 3D
@@ -290,9 +216,9 @@ function animate(sceneThreeJs, time) {
     render(sceneThreeJs);
 }
 
-
 // Fonction de gestion d'animation
 function animationLoop(sceneThreeJs) {
+
     // Fonction JavaScript de demande d'image courante à afficher
     requestAnimationFrame(
 
@@ -348,7 +274,7 @@ function tester_angle_aigu(p1, p2, p3) {
     }
 }
 
-const SEUIL_DEPLACEMENT_SOURIS = 0.2;
+const SEUIL_DEPLACEMENT_SOURIS = 1.0;
 
 function tester_deplacement_souris(dernierPoint, x, y) {
     //On teste si la souris s'est deplacee d'assez pour qu'on modifie le wireframe
@@ -361,8 +287,8 @@ function tester_deplacement_souris(dernierPoint, x, y) {
 /*
 Fonctions utilitaires servant a diverses choses
 */
-function creerPoint(v) {
-    const sphereGeometry = primitive.Sphere(v, 0.02);
+function creerPoint(v, rayon=0.02) {
+    const sphereGeometry = primitive.Sphere(v, rayon);
     const sphere = new THREE.Mesh(sphereGeometry, MaterialRGB(1, 0, 0));
     return sphere;
 }
@@ -401,7 +327,18 @@ function norme(v) {
     return Math.sqrt(dot(v, v));
 }
 
+//ne marche qu'avec les vecteurs de taille 2.
 function distance(p1, p2) {
     const v = [p2.x - p1.x, p2.y - p1.y];
     return norme(v);
+}
+
+function argmin(tableau) {
+    let indice_min = 0;
+    for(let i = 0; i < tableau.length; i++) {
+        if(tableau[i] < tableau[indice_min]) {
+            indice_min = i;
+        }
+    }
+    return indice_min;
 }
