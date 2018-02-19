@@ -5,7 +5,6 @@
 //cette structure constitue une enumeration pour 
 //savoir dans quelle phase de conception on est
 //actuellement.
-
 const phases = {
     PHASE_CORPS:   0,
     PHASE_BALLONS: 1,
@@ -75,16 +74,20 @@ function onMouseDown(event, raycaster, screenSize, sceneThreeJs) {
 function onMouseMove(event, raycaster, screenSize, sceneThreeJs) {
     if(variablesCorps.picked_handler != null) {
         const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs);
-        //console.log(determiner_type_modification(variablesCorps.picked_handler.module, pointIntersection));
         modifier_module(variablesCorps.picked_handler.module, pointIntersection, sceneThreeJs);
     }
 }
 
 function onKeyDown(event, sceneThreeJs) {
+    if(event.ctrlKey) {
+        sceneThreeJs.controls.enabled = true;
+    }
 }
 
 function onKeyUp(event, sceneThreeJs) {
-    variablesCorps.picked_handler = null;
+    if(!event.ctrlKey) {
+        sceneThreeJs.controls.enabled = false;
+    }
 }
 
 function init3DObjects(sceneThreeJs) {
@@ -98,11 +101,10 @@ function init3DObjects(sceneThreeJs) {
     sceneGraph.add(plane);
     sceneThreeJs.pickableObjects.push(plane);
 
-    //creer_module(Vector3(0, 0, 0), sceneThreeJs);
+    const nouveau_module = initialiser_module(Vector3(0, 0, 0), 'modeles/coque_avant.obj', sceneThreeJs);
+    sceneThreeJs.sceneGraph.add(nouveau_module);
+    sceneThreeJs.pickableObjects.push(nouveau_module.handler);
 
-    let o = new THREE.Object3D();
-    loadOBJ('modeles/coque_avant.obj', o);
-    sceneThreeJs.sceneGraph.add(o);
 }
 
 // Fonction d'initialisation d'une scène 3D sans objets 3D
@@ -116,6 +118,7 @@ function initEmptyScene(sceneThreeJs) {
     //la camera est situee sur l'axe z 
     sceneThreeJs.camera.lookAt(0, 0, 0);
     sceneInit.insertAmbientLight(sceneThreeJs.sceneGraph);
+    sceneInit.insertLight(sceneThreeJs.sceneGraph, Vector3(0, 0, -5));
     sceneInit.insertLight(sceneThreeJs.sceneGraph,Vector3(0, 0, 5));
 
     sceneThreeJs.renderer = sceneInit.createRenderer();
@@ -155,20 +158,27 @@ function calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs)
 }
 
 //Fonction qui cree un module -> mesh + un handler
-function creer_module(centre, sceneThreeJs){
+//centre : position du centre
+//nom_fichier : nom_du_fichier du mesh
+function initialiser_module(centre, nom_fichier, sceneThreeJs){
+
     const TAILLE_MODULE = 1.0;
 
     const nouveau_module = new THREE.Group();
     variablesCorps.modules.push(nouveau_module);
 
+    //on initialise les voisins : selon les voisins qu'il a, le modele va changer
     nouveau_module.voisin_gauche = null;
     nouveau_module.voisin_droit  = null;
     nouveau_module.voisin_haut   = null;
     nouveau_module.voisin_bas    = null;
 
-    const geometry = primitive.Cube(Vector3(0, 0, 0), TAILLE_MODULE);
-    nouveau_module.mesh = new THREE.Mesh(geometry, MaterialRGB(0.5, 0.5, 0.5));
 
+    nouveau_module.mesh = new THREE.Object3D();
+    nouveau_module.mesh.rotateY(-Math.PI/2);
+    loadOBJ("modeles/coque_avant.obj", nouveau_module.mesh);   
+
+    //creation du handler
     nouveau_module.handler = creerPoint(Vector3(0, 0, 0), 0.2);
     nouveau_module.handler.translateZ(-TAILLE_MODULE);
     nouveau_module.handler.module = nouveau_module;
@@ -179,8 +189,12 @@ function creer_module(centre, sceneThreeJs){
     nouveau_module.add(nouveau_module.mesh);
     nouveau_module.add(nouveau_module.handler);
 
+    return nouveau_module;
+    //apres avoir appele la fonction, il faut ajouter les deux lignes qui suivent :
+    /*
     sceneThreeJs.sceneGraph.add(nouveau_module);
     sceneThreeJs.pickableObjects.push(nouveau_module.handler);
+    */
 }
 
 function modifier_module(module, pointIntersection, sceneThreeJs) {
@@ -188,13 +202,34 @@ function modifier_module(module, pointIntersection, sceneThreeJs) {
     const reference = Vector2(module.position.x, module.position.y);
 
     const type_modification = determiner_type_modification(module, pointIntersection);
+    
+    //amelioration de la quality of life : quand on modifie un module, on le deselectionne pour 
+    //pas faire des modifications involontaires.
+    if(type_modification != 0) {
+        variablesCorps.picked_handler = null;
+    }
 
-    if(type_modification === 1) {
-        creer_module(Vector3(pos.x, pos.y + 1.0, pos.z), sceneThreeJs);
+    console.log(type_modification);
+
+    switch(type_modification) {
+        case 1:
+
+            break;
+        case 2:
+            const p_v_d = Vector3(pos.x-1.0, pos.y, pos.z);
+            const module_droite = initialiser_module(p_v_d, 'modeles/coque_avant.obj', sceneThreeJs);
+            modifier_modele_module(module, 'modeles/coque_milieu.obj');
+            
+            sceneThreeJs.sceneGraph.add(module_droite);
+            sceneThreeJs.pickableObjects.push(module_droite);
+            break;
+        case 3:
+            break;
+        case 4:
+            break;
+
     }
-    if(type_modification === 2) {
-        creer_module(Vector3(pos.x-1.0, pos.y, pos.z), sceneThreeJs);
-    }
+    
 }
 
 //determine si on doit ajouter un autre module a gauche, droite, en haut, en bas, etc.
@@ -208,6 +243,12 @@ function determiner_type_modification(module, pointIntersection) {
         distances_voronoi[indice] = distance(point_voronoi, sommets_voronoi[indice]);
     }
     return argmin(distances_voronoi);
+}
+
+function modifier_modele_module(module, nom_fichier) {
+    const a_detruire = module.mesh.getObjectByName("mesh");
+    module.mesh.remove(a_detruire);
+    loadOBJ(nom_fichier, module.mesh);
 }
 
 // Demande le rendu de la scène 3D
@@ -348,12 +389,13 @@ function argmin(tableau) {
 }
 
 //Fonctions de chargement des .OBJ
-function loadOBJ(nom_fichier, objet3D) {
+function loadOBJ(nom_fichier, receveur) {
     //objet3D est l'objet qui va contenir l'objet du ficheir .obj
     const loader = new THREE.OBJLoader();
+    let retour = new THREE.Object3D();
     loader.load(nom_fichier,
         function(objet) {
-            objet3D.copy(objet, true); //utilser cette methode pour copier l'objet charge
+            objet.name = 'mesh';
+            receveur.add(objet); //malheureusement, on est oblige de faire comme ça 
         });
-
 }
