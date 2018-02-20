@@ -11,6 +11,19 @@ const phases = {
     PHASE_DETAILS: 2,  
 };
 
+const COQUE_AVANT = 'modeles/coque_avant.obj';
+const COQUE_MILIEU = 'modeles/coque_milieu.obj';
+
+
+//associe a un modele de coque (celui qu'on modifie) le modele apres modification ainsi que 
+//le modele du voisin qu'on cree
+
+//pour l'instant, le tableau est temporaire
+const tableau_transformation_modeles = {  
+};
+tableau_transformation_modeles["modeles/coque_avant.obj"] = [[COQUE_AVANT, COQUE_AVANT], [COQUE_MILIEU, COQUE_AVANT], [COQUE_MILIEU, COQUE_MILIEU], [COQUE_AVANT, COQUE_MILIEU]];
+tableau_transformation_modeles["modeles/coque_milieu.obj"]= [[COQUE_MILIEU, COQUE_MILIEU], [COQUE_MILIEU, COQUE_AVANT], [COQUE_MILIEU, COQUE_MILIEU], [COQUE_MILIEU, COQUE_MILIEU]];
+
 let phase_actuelle = phases.PHASE_CORPS;
 
 const variablesCorps = {
@@ -103,12 +116,12 @@ function init3DObjects(sceneThreeJs) {
     const planeGeometryZ = primitive.Quadrangle(Vector3(-100, -100, 0), Vector3(-100, 100, 0), Vector3(100, 100, 0), Vector3(100, -100, 0));
     const plane = new THREE.Mesh(planeGeometryZ, MaterialRGB(2, 2, 2));
     plane.material.opacity = 0;
-    plane.material.transparent = false; //les deux lignes sont necessaires 
+    plane.material.transparent = true; //les deux lignes sont necessaires 
     plane.name = "planZ"; //Z est la normale a ce plan => plan XY
     sceneGraph.add(plane);
     sceneThreeJs.pickableObjects.push(plane);
 
-    const nouveau_module = initialiser_module(Vector3(0, 0, 0), 'modeles/coque_avant.obj', sceneThreeJs);
+    const nouveau_module = initialiser_module(Vector3(0, 0, 0), COQUE_AVANT, sceneThreeJs);
     sceneThreeJs.sceneGraph.add(nouveau_module);
 }
 
@@ -172,6 +185,8 @@ function initialiser_module(centre, nom_fichier, sceneThreeJs){
 
     const nouveau_module = new THREE.Group();
     nouveau_module.name = "module";
+    nouveau_module.nom_modele = nom_fichier;
+
     variablesCorps.modules.push(nouveau_module);
 
     //on initialise les voisins : selon les voisins qu'il a, le modele va changer
@@ -212,22 +227,26 @@ function modifier_module(module, pointIntersection, sceneThreeJs) {
     const reference = Vector2(module.position.x, module.position.y);
 
     const type_modification = determiner_type_modification(module, pointIntersection);
+    let fichier_modification = "";
+    let fichier_voisin = "";
 
     //amelioration de la quality of life : quand on modifie un module, on le deselectionne pour 
     //pas faire des modifications involontaires.
     if(type_modification != 0) {
         variablesCorps.picked_module = null;
+        console.log(module.nom_modele);
+        fichier_modification = tableau_transformation_modeles[module.nom_modele][type_modification-1][0];
+        fichier_voisin = tableau_transformation_modeles[module.nom_modele][type_modification-1][1];
     }
 
     switch(type_modification) {
         case 1:
-
             break;
         case 2:
                 if(module.voisin_droite === null) {
                 const p_v_d = Vector3(pos.x-1.0, pos.y, pos.z);
-                const module_droite = initialiser_module(p_v_d, 'modeles/coque_avant.obj', sceneThreeJs);
-                modifier_modele_module(module, 'modeles/coque_milieu.obj');
+                const module_droite = initialiser_module(p_v_d, fichier_voisin, sceneThreeJs);
+                modifier_modele_module(module, fichier_modification);
 
                 module.voisin_droite = module_droite; //on met a jour les voisins
                 module_droite.voisin_gauche = module;
