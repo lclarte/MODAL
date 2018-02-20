@@ -69,32 +69,58 @@ function main(){
 
     // *************************** //
     // Lancement de l'animation
-    // *************************** //
+    // *************************** //s
     animationLoop(sceneThreeJs);
 }
 
 
 function onMouseUp(event) {
     variablesCorps.picked_module = null;
+    variablesBallons.picked_handler = null;
 }
 
 function onMouseDown(event, raycaster, screenSize, sceneThreeJs) {
     const intersects = calculer_intersects(event, raycaster, screenSize, sceneThreeJs, true);
-    if(intersects.length > 0) {
-        variablesCorps.picked_module = intersects[0].object; //apparement
-        while(variablesCorps.picked_module.name !== "module" && variablesCorps.picked_module.name !== "sceneGraph") {
-            variablesCorps.picked_module = variablesCorps.picked_module.parent;
+    if(intersects.length == 0) {
+        return;
+    }
+    const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs);
+    if(event.buttons === 1){ //si seul le bouton gauche est clique 
+       
+        if(intersects[0].object.name == "handler") {//c'est un ballon, on va le modifier en consequence
+            variablesBallons.picked_handler = intersects[0].object;
         }
-        if(variablesCorps.picked_module.name === "sceneGraph") {
-            variablesCorps.picked_module = null;
+        else{
+            variablesCorps.picked_module = intersects[0].object; //apparement
+            while(variablesCorps.picked_module.name !== "module" && variablesCorps.picked_module.name !== "sceneGraph") {
+                variablesCorps.picked_module = variablesCorps.picked_module.parent;
+            }
+            if(variablesCorps.picked_module.name === "sceneGraph") {
+                variablesCorps.picked_module = null;
+            }
+
         }
+    }
+    else if(event.buttons === 2) {//bouton droit -> ajout d'un nouveau ballon
+        phase_actuelle = phases.PHASE_BALLONS;
+
+        const instance = initialiser_ballon(pointIntersection, sceneThreeJs);
+        variablesBallons.instances.push(instance);
+        sceneThreeJs.sceneGraph.add(instance.groupe);
+        sceneThreeJs.pickableObjects.push(instance.groupe);
+        creer_ballon_from_instance(instance, sceneThreeJs);
     }
 }
 
 function onMouseMove(event, raycaster, screenSize, sceneThreeJs) {
+    const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs);
     if(variablesCorps.picked_module != null) {
-        const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs);
         modifier_module(variablesCorps.picked_module, pointIntersection, sceneThreeJs);
+    }
+    else if(variablesBallons.picked_handler != null) {
+        modifier_ballon(variablesBallons.picked_handler, pointIntersection);
+        const instance = variablesBallons.picked_handler.instance;
+        creer_ballon_from_instance(instance, sceneThreeJs);
     }
 }
 
