@@ -15,7 +15,7 @@ let phase_actuelle = phases.PHASE_CORPS;
 
 const variablesCorps = {
     modules: [],
-    picked_handler: null,
+    picked_module: null,
 };
 
 main();
@@ -62,19 +62,26 @@ function main(){
 
 
 function onMouseUp(event) {
+    variablesCorps.picked_module = null;
 }
 
 function onMouseDown(event, raycaster, screenSize, sceneThreeJs) {
-    const intersects = calculer_intersects(event, raycaster, screenSize, sceneThreeJs);
-    if(intersects.length > 0 && intersects[0].object.name ===    "handler") {
-        variablesCorps.picked_handler = intersects[0].object; //ATTENTION, ICI ON FAIT L'HYPOTHESE QUE L'OBJET SELECTIONNE EST UN HANDLER
+    const intersects = calculer_intersects(event, raycaster, screenSize, sceneThreeJs, true);
+    if(intersects.length > 0) {
+        variablesCorps.picked_module = intersects[0].object; //apparement
+        while(variablesCorps.picked_module.name !== "module" && variablesCorps.picked_module.name !== "sceneGraph") {
+            variablesCorps.picked_module = variablesCorps.picked_module.parent;
+        }
+        if(variablesCorps.picked_module.name === "sceneGraph") {
+            variablesCorps.picked_module = null;
+        }
     }
 }
 
 function onMouseMove(event, raycaster, screenSize, sceneThreeJs) {
-    if(variablesCorps.picked_handler != null) {
+    if(variablesCorps.picked_module != null) {
         const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs);
-        modifier_module(variablesCorps.picked_handler.module, pointIntersection, sceneThreeJs);
+        modifier_module(variablesCorps.picked_module, pointIntersection, sceneThreeJs);
     }
 }
 
@@ -96,15 +103,13 @@ function init3DObjects(sceneThreeJs) {
     const planeGeometryZ = primitive.Quadrangle(Vector3(-100, -100, 0), Vector3(-100, 100, 0), Vector3(100, 100, 0), Vector3(100, -100, 0));
     const plane = new THREE.Mesh(planeGeometryZ, MaterialRGB(2, 2, 2));
     plane.material.opacity = 0;
-    plane.material.transparent = true; //les deux lignes sont necessaires 
+    plane.material.transparent = false; //les deux lignes sont necessaires 
     plane.name = "planZ"; //Z est la normale a ce plan => plan XY
     sceneGraph.add(plane);
     sceneThreeJs.pickableObjects.push(plane);
 
     const nouveau_module = initialiser_module(Vector3(0, 0, 0), 'modeles/coque_avant.obj', sceneThreeJs);
     sceneThreeJs.sceneGraph.add(nouveau_module);
-    sceneThreeJs.pickableObjects.push(nouveau_module.handler);
-
 }
 
 // Fonction d'initialisation d'une scène 3D sans objets 3D
@@ -113,13 +118,14 @@ function init3DObjects(sceneThreeJs) {
 function initEmptyScene(sceneThreeJs) {
 
     sceneThreeJs.sceneGraph = new THREE.Scene();
+    sceneThreeJs.sceneGraph.name = "sceneGraph";
 
     sceneThreeJs.camera = sceneInit.createCamera(0, 0, -5);
     //la camera est situee sur l'axe z 
     sceneThreeJs.camera.lookAt(0, 0, 0);
     sceneInit.insertAmbientLight(sceneThreeJs.sceneGraph);
-    sceneInit.insertLight(sceneThreeJs.sceneGraph, Vector3(0, 0, -5));
-    sceneInit.insertLight(sceneThreeJs.sceneGraph,Vector3(0, 0, 5));
+    sceneInit.insertLight(sceneThreeJs.sceneGraph, Vector3(0, 1, -5));
+    sceneInit.insertLight(sceneThreeJs.sceneGraph,Vector3(0, 1, 5));
 
     sceneThreeJs.renderer = sceneInit.createRenderer();
     sceneInit.insertRenderInHtml(sceneThreeJs.renderer.domElement);
@@ -130,7 +136,7 @@ function initEmptyScene(sceneThreeJs) {
     window.addEventListener('resize', function(event){onResize(sceneThreeJs);}, false);
 }
 
-function calculer_intersects(event, raycaster, screenSize, sceneThreeJs) {
+function calculer_intersects(event, raycaster, screenSize, sceneThreeJs, recursif=true) {
     const sceneGraph = sceneThreeJs.sceneGraph;
     const camera     = sceneThreeJs.camera;
 
@@ -141,7 +147,7 @@ function calculer_intersects(event, raycaster, screenSize, sceneThreeJs) {
     const y = -2*yPixel/screenSize.h + 1;
 
     raycaster.setFromCamera(Vector2(x, y), camera);
-    const intersects = raycaster.intersectObjects(sceneThreeJs.pickableObjects, true);
+    const intersects = raycaster.intersectObjects(sceneThreeJs.sceneGraph.children, recursif);
     return intersects;
 }
 
@@ -165,29 +171,33 @@ function initialiser_module(centre, nom_fichier, sceneThreeJs){
     const TAILLE_MODULE = 1.0;
 
     const nouveau_module = new THREE.Group();
+    nouveau_module.name = "module";
     variablesCorps.modules.push(nouveau_module);
 
     //on initialise les voisins : selon les voisins qu'il a, le modele va changer
-    nouveau_module.voisin_gauche = null;
-    nouveau_module.voisin_droit  = null;
-    nouveau_module.voisin_haut   = null;
-    nouveau_module.voisin_bas    = null;
+    nouveau_module.voisin_gauche    = null;
+    nouveau_module.voisin_droite    = null;
+    nouveau_module.voisin_haut      = null;
+    nouveau_module.voisin_bas       = null;
 
 
     nouveau_module.mesh = new THREE.Object3D();
     nouveau_module.mesh.rotateY(-Math.PI/2);
-    loadOBJ("modeles/coque_avant.obj", nouveau_module.mesh);   
+    loadOBJ("modeles/coque_avant.obj", nouveau_module.mesh);
+    nouveau_module.mesh.name = "mesh";
+    sceneThreeJs.pickableObjects.push(nouveau_module.mesh);
 
+/*
     //creation du handler
     nouveau_module.handler = creerPoint(Vector3(0, 0, 0), 0.2);
     nouveau_module.handler.translateZ(-TAILLE_MODULE);
     nouveau_module.handler.module = nouveau_module;
     nouveau_module.handler.name = "handler";
-
+*/
     nouveau_module.position.set(centre.x, centre.y, centre.z);
 
     nouveau_module.add(nouveau_module.mesh);
-    nouveau_module.add(nouveau_module.handler);
+    //nouveau_module.add(nouveau_module.handler);
 
     return nouveau_module;
     //apres avoir appele la fonction, il faut ajouter les deux lignes qui suivent :
@@ -202,26 +212,29 @@ function modifier_module(module, pointIntersection, sceneThreeJs) {
     const reference = Vector2(module.position.x, module.position.y);
 
     const type_modification = determiner_type_modification(module, pointIntersection);
-    
+
     //amelioration de la quality of life : quand on modifie un module, on le deselectionne pour 
     //pas faire des modifications involontaires.
     if(type_modification != 0) {
-        variablesCorps.picked_handler = null;
+        variablesCorps.picked_module = null;
     }
-
-    console.log(type_modification);
 
     switch(type_modification) {
         case 1:
 
             break;
         case 2:
-            const p_v_d = Vector3(pos.x-1.0, pos.y, pos.z);
-            const module_droite = initialiser_module(p_v_d, 'modeles/coque_avant.obj', sceneThreeJs);
-            modifier_modele_module(module, 'modeles/coque_milieu.obj');
-            
-            sceneThreeJs.sceneGraph.add(module_droite);
-            sceneThreeJs.pickableObjects.push(module_droite);
+                if(module.voisin_droite === null) {
+                const p_v_d = Vector3(pos.x-1.0, pos.y, pos.z);
+                const module_droite = initialiser_module(p_v_d, 'modeles/coque_avant.obj', sceneThreeJs);
+                modifier_modele_module(module, 'modeles/coque_milieu.obj');
+
+                module.voisin_droite = module_droite; //on met a jour les voisins
+                module_droite.voisin_gauche = module;
+
+                sceneThreeJs.sceneGraph.add(module_droite);
+                sceneThreeJs.pickableObjects.push(module_droite);
+            }
             break;
         case 3:
             break;
@@ -395,7 +408,7 @@ function loadOBJ(nom_fichier, receveur) {
     let retour = new THREE.Object3D();
     loader.load(nom_fichier,
         function(objet) {
-            objet.name = 'mesh';
+            objet.name = "mesh";
             receveur.add(objet); //malheureusement, on est oblige de faire comme ça 
         });
 }

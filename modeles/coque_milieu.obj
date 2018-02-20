@@ -1,7 +1,7 @@
 # Blender v2.79 (sub 0) OBJ File: 'coque_milieu.blend'
 # www.blender.org
 mtllib coque_milieu.mtl
-o Cube_Cube.001
+o mesh_Cube.001
 v 0.000000 -0.500000 0.500000
 v -0.484075 0.000000 0.500000
 v -0.484075 0.000000 -0.500000
