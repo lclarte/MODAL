@@ -16,17 +16,21 @@ const variablesBallons = {
 function initialiser_ballon(centre) {
     const instance = {};
 
-    instance.groupe = new THREE.Group();
+    instance.groupe = new THREE.Group();//groupe contient les handlers Object3D
+    instance.groupe.name = "groupe_handlers";
     instance.groupe.position.set(centre.x, centre.y, centre.z);
     instance.handlers = [];
 
     for(var axe = 0; axe < 3; axe++) {
         for(var positif = 0; positif < 2; positif++) {
-            instance.handlers[2*axe+positif] = creerPoint(Vector3(0, 0, 0), 0.06);//les deux premiers sont pour l'axe x
+            instance.handlers[2*axe+positif] = creerPoint(Vector3(0, 0, 0), 0.2);//les deux premiers sont pour l'axe x
             instance.handlers[2*axe+positif].axe = axe;
             instance.handlers[2*axe+positif].positif = positif;
             instance.handlers[2*axe+positif].instance = instance; //instance parent du handler
             instance.handlers[2*axe+positif].name = "handler"; //le meme pour tous les handlers, pour qu'on puisse les identifier
+            instance.handlers[2*axe+positif].material.opacity = 0.1;
+            instance.handlers[2*axe+positif].material.transparent = true;
+
             //les deux suivants pour l'axe y et les derniers pour l'axe z
             const pos = position_defaut_handlers[2*axe+positif];
             instance.handlers[2*axe+positif].position.set(pos.x, pos.y, pos.z);
@@ -72,10 +76,13 @@ function modifier_ballon(picked_handler, pointIntersection) {
 
 //prend en argument une instance (du tableau instances) et cree le ballon associe
 function creer_ballon_from_instance(instance, sceneThreeJs) {
-    if(instance.mesh != null) {
-        sceneThreeJs.sceneGraph.remove(instance);
+	//a mettre avant d'appeler la fonction pour detruire la sphere : 
+	/*  
+	    if(instance.mesh != null) {
+        sceneThreeJs.sceneGraph.remove(instance.mesh);
         instance.mesh = null;
     }
+    */
 
     const sphereGeometry = new THREE.SphereGeometry(R_B_D, 16, 16);
     const vertices = sphereGeometry.vertices;
@@ -94,9 +101,13 @@ function creer_ballon_from_instance(instance, sceneThreeJs) {
     }
     const mesh = new THREE.Mesh(sphereGeometry, MaterialRGB(0.5, 0.5, 0.5));
     mesh.position.set(centre.x, centre.y, centre.z);
-    mesh.name = "mesh";
-    sceneThreeJs.sceneGraph.add(mesh);
+    mesh.name = "ballon";
     instance.mesh = mesh;
+    mesh.instance = instance; //servira pour detruire le ballon: on va detruire l'instance en meme temps
+
+    return mesh;
+
+    //a mettre apres la fonction pour ajouter le ballon : 
 }
 
 function Vector3(x,y,z) {

@@ -62,7 +62,7 @@ function main(){
     document.addEventListener('mouseup', wrapperMouseUp);
     const wrapperMouseMove = function(event) {onMouseMove(event, raycaster, screenSize, sceneThreeJs);};
     document.addEventListener('mousemove', wrapperMouseMove);
-    const wrapperKeyDown = function(event) {onKeyDown(event, sceneThreeJs)};
+    const wrapperKeyDown = function(event) {onKeyDown(event, raycaster, screenSize, sceneThreeJs)};
     document.addEventListener('keydown', wrapperKeyDown);
     const wrapperKeyUp = function(event) {onKeyUp(event, sceneThreeJs)};
     document.addEventListener('keyup', wrapperKeyUp);
@@ -86,7 +86,6 @@ function onMouseDown(event, raycaster, screenSize, sceneThreeJs) {
     }
     const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs);
     if(event.buttons === 1){ //si seul le bouton gauche est clique 
-       
         if(intersects[0].object.name == "handler") {//c'est un ballon, on va le modifier en consequence
             variablesBallons.picked_handler = intersects[0].object;
         }
@@ -105,10 +104,18 @@ function onMouseDown(event, raycaster, screenSize, sceneThreeJs) {
         phase_actuelle = phases.PHASE_BALLONS;
 
         const instance = initialiser_ballon(pointIntersection, sceneThreeJs);
+
         variablesBallons.instances.push(instance);
         sceneThreeJs.sceneGraph.add(instance.groupe);
-        sceneThreeJs.pickableObjects.push(instance.groupe);
-        creer_ballon_from_instance(instance, sceneThreeJs);
+        sceneThreeJs.pickableObjects.push(instance.groupe);//on ajoute les handlers aux objets pickable
+
+        if(instance.mesh != null) {
+            sceneThreeJs.sceneGraph.remove(instance.mesh);
+            instance.mesh = null;
+        }
+        const mesh = creer_ballon_from_instance(instance, sceneThreeJs);
+        sceneThreeJs.sceneGraph.add(mesh);
+        sceneThreeJs.pickableObjects.push(mesh);
     }
 }
 
@@ -124,7 +131,9 @@ function onMouseMove(event, raycaster, screenSize, sceneThreeJs) {
     }
 }
 
-function onKeyDown(event, sceneThreeJs) {
+function onKeyDown(event, raycaster, screenSize, sceneThreeJs) {
+    //keyCode de la touche supprimer : 27
+
     if(event.ctrlKey) {
         sceneThreeJs.controls.enabled = true;
     }
