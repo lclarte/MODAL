@@ -112,6 +112,9 @@ function onMouseDown(event, raycaster, screenSize, sceneThreeJs) {
         if(instance.mesh != null) {
             sceneThreeJs.sceneGraph.remove(instance.mesh);
             instance.mesh = null;
+        }        if(instance.mesh != null) {
+            sceneThreeJs.sceneGraph.remove(instance.mesh);
+            instance.mesh = null;
         }
         const mesh = creer_ballon_from_instance(instance, sceneThreeJs);
         sceneThreeJs.sceneGraph.add(mesh);
@@ -127,13 +130,27 @@ function onMouseMove(event, raycaster, screenSize, sceneThreeJs) {
     else if(variablesBallons.picked_handler != null) {
         modifier_ballon(variablesBallons.picked_handler, pointIntersection);
         const instance = variablesBallons.picked_handler.instance;
-        creer_ballon_from_instance(instance, sceneThreeJs);
+
+        if(instance.mesh != null) {
+            sceneThreeJs.sceneGraph.remove(instance.mesh);
+            instance.mesh = null;
+        }
+        const mesh = creer_ballon_from_instance(instance, sceneThreeJs);
+        sceneThreeJs.sceneGraph.add(mesh);
+        sceneThreeJs.pickableObjects.push(mesh);
     }
 }
 
 function onKeyDown(event, raycaster, screenSize, sceneThreeJs) {
     //keyCode de la touche supprimer : 27
-
+    if(event.keyCode === 27){
+        const n = variablesBallons.instances.length;
+        for(let i = 0; i < n; i++) { 
+            sceneThreeJs.sceneGraph.remove(variablesBallons.instances[n-i-1].groupe);
+            sceneThreeJs.sceneGraph.remove(variablesBallons.instances[n-i-1].mesh);
+            variablesBallons.instances.pop();
+        }
+    }
     if(event.ctrlKey) {
         sceneThreeJs.controls.enabled = true;
     }
