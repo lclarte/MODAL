@@ -99,7 +99,7 @@ function creer_ballon_from_instance(instance, sceneThreeJs) {
         v_pos.y = v_pos.y*(Math.abs(instance.handlers[2+indice_y].position.y)/R_B_D);
         v_pos.z = v_pos.z*(Math.abs(instance.handlers[4+indice_z].position.z)/R_B_D);
     }
-    const mesh = new THREE.Mesh(sphereGeometry, MaterialRGB(0.5, 0.5, 0.5));
+    const mesh = new THREE.Mesh(sphereGeometry, MaterialRGB(1.5, 1.3, 1.3));
     mesh.position.set(centre.x, centre.y, centre.z);
     mesh.name = "ballon";
     instance.mesh = mesh;
