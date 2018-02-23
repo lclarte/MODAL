@@ -1,5 +1,7 @@
 "use strict";
 
+const t = {};
+
 //remarque importante : on peut ajouter des champs 
 
 //cette structure constitue une enumeration pour 
@@ -11,25 +13,7 @@ const phases = {
     PHASE_DETAILS: 2,  
 };
 
-const COQUE_AVANT = 'modeles/coque_avant.obj';
-const COQUE_MILIEU = 'modeles/coque_milieu.obj';
-
-
-//associe a un modele de coque (celui qu'on modifie) le modele apres modification ainsi que 
-//le modele du voisin qu'on cree
-
-//pour l'instant, le tableau est temporaire
-const tableau_transformation_modeles = {  
-};
-tableau_transformation_modeles["modeles/coque_avant.obj"] = [[COQUE_AVANT, COQUE_AVANT], [COQUE_MILIEU, COQUE_AVANT], [COQUE_MILIEU, COQUE_MILIEU], [COQUE_AVANT, COQUE_MILIEU]];
-tableau_transformation_modeles["modeles/coque_milieu.obj"]= [[COQUE_MILIEU, COQUE_MILIEU], [COQUE_MILIEU, COQUE_AVANT], [COQUE_MILIEU, COQUE_MILIEU], [COQUE_MILIEU, COQUE_MILIEU]];
-
 let phase_actuelle = phases.PHASE_CORPS;
-
-const variablesCorps = {
-    modules: [],
-    picked_module: null,
-};
 
 main();
 
@@ -80,6 +64,10 @@ function onMouseUp(event) {
 }
 
 function onMouseDown(event, raycaster, screenSize, sceneThreeJs) {
+    if(sceneThreeJs.controls.enabled === true) {
+        return;
+    }
+
     const intersects = calculer_intersects(event, raycaster, screenSize, sceneThreeJs, true);
     if(intersects.length == 0) {
         return;
@@ -122,7 +110,11 @@ function onMouseDown(event, raycaster, screenSize, sceneThreeJs) {
     }
 }
 
-function onMouseMove(event, raycaster, screenSize, sceneThreeJs) {
+function onMouseMove(event, raycaster, screenSize, sceneThreeJs) {    
+    if(sceneThreeJs.controls.enabled === true) {
+        return;
+    }
+    
     const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs);
     if(variablesCorps.picked_module != null) {
         modifier_module(variablesCorps.picked_module, pointIntersection, sceneThreeJs);
@@ -198,6 +190,10 @@ function init3DObjects(sceneThreeJs) {
     sceneThreeJs.pickableObjects.push(plane);
 
     const nouveau_module = initialiser_module(Vector3(0, 0, 0), COQUE_AVANT, sceneThreeJs);
+    nouveau_module.x = 0;
+    nouveau_module.y = 0;
+
+    placer_module_dans_tableau(nouveau_module);
     sceneThreeJs.sceneGraph.add(nouveau_module);
 }
 
@@ -252,113 +248,6 @@ function calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs)
     return null;
 }
 
-//Fonction qui cree un module -> mesh + un handler
-//centre : position du centre
-//nom_fichier : nom_du_fichier du mesh
-function initialiser_module(centre, nom_fichier, sceneThreeJs){
-
-    const TAILLE_MODULE = 1.0;
-
-    const nouveau_module = new THREE.Group();
-    nouveau_module.name = "module";
-    nouveau_module.nom_modele = nom_fichier;
-
-    variablesCorps.modules.push(nouveau_module);
-
-    //on initialise les voisins : selon les voisins qu'il a, le modele va changer
-    nouveau_module.voisin_gauche    = null;
-    nouveau_module.voisin_droite    = null;
-    nouveau_module.voisin_haut      = null;
-    nouveau_module.voisin_bas       = null;
-
-
-    nouveau_module.mesh = new THREE.Object3D();
-    nouveau_module.mesh.rotateY(-Math.PI/2);
-    loadOBJ("modeles/coque_avant.obj", nouveau_module.mesh);
-    nouveau_module.mesh.name = "mesh";
-    sceneThreeJs.pickableObjects.push(nouveau_module.mesh);
-
-/*
-    //creation du handler
-    nouveau_module.handler = creerPoint(Vector3(0, 0, 0), 0.2);
-    nouveau_module.handler.translateZ(-TAILLE_MODULE);
-    nouveau_module.handler.module = nouveau_module;
-    nouveau_module.handler.name = "handler";
-*/
-    nouveau_module.position.set(centre.x, centre.y, centre.z);
-
-    nouveau_module.add(nouveau_module.mesh);
-    //nouveau_module.add(nouveau_module.handler);
-
-    return nouveau_module;
-    //apres avoir appele la fonction, il faut ajouter les deux lignes qui suivent :
-    /*
-    sceneThreeJs.sceneGraph.add(nouveau_module);
-    sceneThreeJs.pickableObjects.push(nouveau_module.handler);
-    */
-}
-
-function modifier_module(module, pointIntersection, sceneThreeJs) {
-    const pos = module.position;
-    const reference = Vector2(module.position.x, module.position.y);
-
-    const type_modification = determiner_type_modification(module, pointIntersection);
-    let fichier_modification = "";
-    let fichier_voisin = "";
-
-    //amelioration de la quality of life : quand on modifie un module, on le deselectionne pour 
-    //pas faire des modifications involontaires.
-    if(type_modification != 0) {
-        variablesCorps.picked_module = null;
-        console.log(module.nom_modele);
-        fichier_modification = tableau_transformation_modeles[module.nom_modele][type_modification-1][0];
-        fichier_voisin = tableau_transformation_modeles[module.nom_modele][type_modification-1][1];
-    }
-
-    switch(type_modification) {
-        case 1:
-            break;
-        case 2:
-                if(module.voisin_droite === null) {
-                const p_v_d = Vector3(pos.x-1.0, pos.y, pos.z);
-                const module_droite = initialiser_module(p_v_d, fichier_voisin, sceneThreeJs);
-                modifier_modele_module(module, fichier_modification);
-
-                module.voisin_droite = module_droite; //on met a jour les voisins
-                module_droite.voisin_gauche = module;
-
-                sceneThreeJs.sceneGraph.add(module_droite);
-                sceneThreeJs.pickableObjects.push(module_droite);
-            }
-            break;
-        case 3:
-            break;
-        case 4:
-            break;
-
-    }
-    
-}
-
-//determine si on doit ajouter un autre module a gauche, droite, en haut, en bas, etc.
-function determiner_type_modification(module, pointIntersection) {
-    const m_pos             = module.position;
-    const point_voronoi     = Vector2(pointIntersection.x - m_pos.x, pointIntersection.y - m_pos.y);
-    const sommets_voronoi   = [Vector2(0, 0), Vector2(0.0, 2.0), Vector2(-2.0, 0.0), Vector2(0, -2), Vector2(2.0, 0.0)];
-    //les sommets sont listes dans l'ordre : centre, haut, droite, bas, gauche
-    const distances_voronoi = [];
-    for(let indice = 0; indice < 5; indice++) {
-        distances_voronoi[indice] = distance(point_voronoi, sommets_voronoi[indice]);
-    }
-    return argmin(distances_voronoi);
-}
-
-function modifier_modele_module(module, nom_fichier) {
-    const a_detruire = module.mesh.getObjectByName("mesh");
-    module.mesh.remove(a_detruire);
-    loadOBJ(nom_fichier, module.mesh);
-}
-
 // Demande le rendu de la scène 3D
 function render(sceneThreeJs) {
     sceneThreeJs.renderer.render(sceneThreeJs.sceneGraph, sceneThreeJs.camera);
@@ -408,65 +297,9 @@ function MaterialRGB(r,g,b) {
 }
 
 /*
-
-Fonctions utilitaires permettant de verifier certaines proprietes geometriques 
-
-*/
-
-const SEUIL_ANGLE_AIGU = 1.0;
-
-function tester_angle_aigu(p1, p2, p3) { 
-    //Fonction a appeler pour tester si le dernier point qu'on a 
-    //ajoute forme un angle aigu avec les deux precedents
-    const a = angle(p1, p2, p3);
-    if(Math.abs(a) > SEUIL_ANGLE_AIGU) {
-        return true;
-    }
-    else{
-        return false;
-    }
-}
-
-const SEUIL_DEPLACEMENT_SOURIS = 1.0;
-
-function tester_deplacement_souris(dernierPoint, x, y) {
-    //On teste si la souris s'est deplacee d'assez pour qu'on modifie le wireframe
-    //x et y sont la position de la souris DANS le referentiel, pas sur l'ecran$
-    const d = distance(dernierPoint, Vector2(x, y));
-    return (d > SEUIL_DEPLACEMENT_SOURIS);
-}
-
-
-/*
 Fonctions utilitaires servant a diverses choses
 */
-function creerPoint(v, rayon=0.02) {
-    const sphereGeometry = primitive.Sphere(v, rayon);
-    const sphere = new THREE.Mesh(sphereGeometry, MaterialRGB(1, 0, 0));
-    return sphere;
-}
 
-function extruder_listePoints(sceneThreeJs) {
-    const sceneGraph = sceneThreeJs.sceneGraph;
-    const listePoints = variablesCorps.listePoints;
-
-    const curveShape = new THREE.Shape(listePoints);
-
-    let epaisseur = 1;
-    //modifier les parametres d'extrusion pour que la largeur s'adapte a la longueur
-    const extrudeSettings = {amount: epaisseur, bevelEnabled:false};
-    const extrudeGeometry = new THREE.ExtrudeBufferGeometry(curveShape, extrudeSettings);
-    const extrudeObject   = new THREE.Mesh(extrudeGeometry, MaterialRGB(1, 1, 1));
-    extrudeObject.name = "corps";
-    sceneGraph.add(extrudeObject);
-}
-
-function angle(p1, p2, p3) {
-    //Ici, on a des points de dimension 2
-    const v1 = [p2.x - p1.x, p2.y - p1.y];
-    const v2 = [p3.x - p2.x, p3.y - p2.y];
-    return Math.acos(dot(v1, v2)/Math.sqrt((dot(v1, v1)*dot(v2, v2)))); 
-}
 
 function dot(v1, v2) {
     let product = 0;
@@ -506,4 +339,10 @@ function loadOBJ(nom_fichier, receveur) {
             objet.name = "mesh";
             receveur.add(objet); //malheureusement, on est oblige de faire comme ça 
         });
+}
+
+function creerPoint(v, r) {
+    const geometry = primitive.Sphere(v, r);
+    const mesh = new THREE.Mesh(geometry, MaterialRGB(0.5, 0.5, 0.5));
+    return mesh;
 }
