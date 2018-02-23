@@ -19,7 +19,6 @@ main();
 
 function main(){
 
-
     const sceneThreeJs = {
         sceneGraph: null,
         camera: null,
@@ -114,10 +113,11 @@ function onMouseMove(event, raycaster, screenSize, sceneThreeJs) {
     if(sceneThreeJs.controls.enabled === true) {
         return;
     }
-    
+
     const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs);
     if(variablesCorps.picked_module != null) {
-        modifier_module(variablesCorps.picked_module, pointIntersection, sceneThreeJs);
+        ajouter_module(variablesCorps.picked_module, pointIntersection, sceneThreeJs);
+        mettre_a_jour_modele_tous_modules();
     }
     else if(variablesBallons.picked_handler != null) {
         modifier_ballon(variablesBallons.picked_handler, pointIntersection);
@@ -189,7 +189,7 @@ function init3DObjects(sceneThreeJs) {
     sceneGraph.add(plane);
     sceneThreeJs.pickableObjects.push(plane);
 
-    const nouveau_module = initialiser_module(Vector3(0, 0, 0), COQUE_AVANT, sceneThreeJs);
+    const nouveau_module = initialiser_module(Vector3(0, 0, 0), 0, 0, sceneThreeJs);
     nouveau_module.x = 0;
     nouveau_module.y = 0;
 

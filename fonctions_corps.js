@@ -9,14 +9,17 @@ const variablesCorps = {
 
 
 const COQUE_AVANT = 'modeles/coque_avant.obj';
-const COQUE_AVANT_BAS = 'modeles/coque_avant.obj';
+const COQUE_AVANT_BAS = 'modeles/coque_avant_bas.obj';
 const COQUE_MILIEU = 'modeles/coque_milieu.obj';
 const COQUE_MILIEU_BAS = 'modeles/coque_milieu_bas.obj';
-const COQUE_ARRIERE = 'modeles/coque_arriere.obj';
-const COQUE_ARRIERE_BAS = 'modeles/coque_arriere_bas.obj';
+const COQUE_ARRIERE = 'modeles/coque_milieu.obj';
+const COQUE_ARRIERE_BAS = 'modeles/coque_milieu_bas.obj';
 
 //associe a un modele de coque (celui qu'on modifie) le modele apres modification ainsi que 
 //le modele du voisin qu'on cree
+
+/*
+
 
 //pour l'instant, le tableau est temporaire
 const tableau_transformation_modeles = {  
@@ -24,16 +27,21 @@ const tableau_transformation_modeles = {
 tableau_transformation_modeles["modeles/coque_avant.obj"] = [[COQUE_AVANT, COQUE_AVANT], [COQUE_MILIEU, COQUE_AVANT], [COQUE_MILIEU, COQUE_MILIEU], [COQUE_AVANT, COQUE_MILIEU]];
 tableau_transformation_modeles["modeles/coque_milieu.obj"]= [[COQUE_MILIEU, COQUE_MILIEU], [COQUE_MILIEU, COQUE_AVANT], [COQUE_MILIEU, COQUE_MILIEU], [COQUE_MILIEU, COQUE_MILIEU]];
 
+
+*/
+
 //Fonction qui cree un module -> mesh + un handler
 //centre : position du centre
 //nom_fichier : nom_du_fichier du mesh
-function initialiser_module(centre, nom_fichier, sceneThreeJs){
+function initialiser_module(centre, x, y, sceneThreeJs){
 
     const TAILLE_MODULE = 1.0;
 
     const nouveau_module = new THREE.Group();
     nouveau_module.name = "module";
-    nouveau_module.nom_modele = nom_fichier;
+
+    nouveau_module.x = Math.round(x);
+    nouveau_module.y = Math.round(y);
 
     variablesCorps.modules.push(nouveau_module);
 
@@ -43,10 +51,13 @@ function initialiser_module(centre, nom_fichier, sceneThreeJs){
     nouveau_module.voisin_haut      = null;
     nouveau_module.voisin_bas       = null;
 
-
     nouveau_module.mesh = new THREE.Object3D();
     nouveau_module.mesh.rotateY(-Math.PI/2);
-    loadOBJ("modeles/coque_avant.obj", nouveau_module.mesh);
+
+    const modele = determiner_fichier_module(nouveau_module);
+
+    loadOBJ(modele, nouveau_module.mesh);
+
     nouveau_module.mesh.name = "mesh";
     sceneThreeJs.pickableObjects.push(nouveau_module.mesh);
 
@@ -64,7 +75,10 @@ function initialiser_module(centre, nom_fichier, sceneThreeJs){
 }
 
 
-function modifier_module(module, pointIntersection, sceneThreeJs) {
+function ajouter_module(module, pointIntersection, sceneThreeJs) {
+	let x = module.x;
+	let y = module.y;
+
     const pos = module.position;
     const reference = Vector2(module.position.x, module.position.y);
 
@@ -72,40 +86,41 @@ function modifier_module(module, pointIntersection, sceneThreeJs) {
     let fichier_modification = "";
     let fichier_voisin = "";
 
-    //amelioration de la quality of life : quand on modifie un module, on le deselectionne pour 
-    //pas faire des modifications involontaires.
-    if(type_modification != 0) {
-        variablesCorps.picked_module = null;
-        console.log(module.nom_modele);
-        fichier_modification = tableau_transformation_modeles[module.nom_modele][type_modification-1][0];
-        fichier_voisin = tableau_transformation_modeles[module.nom_modele][type_modification-1][1];
-    }
+
+    if(type_modification === 0) {return};
+
+    let delta_x = 0;
+    let delta_y = 0;
 
     switch(type_modification) {
         case 1:
+        	delta_y = 1;
             break;
         case 2:
-                if(module.voisin_droite === null) {
-                const p_v_d = Vector3(pos.x-1.0, pos.y, pos.z);
-                const module_droite = initialiser_module(p_v_d, fichier_voisin, sceneThreeJs);
-                modifier_modele_module(module, fichier_modification);
-
-                module.voisin_droite = module_droite; //on met a jour les voisins
-                module_droite.voisin_gauche = module;
-
-                sceneThreeJs.sceneGraph.add(module_droite);
-                sceneThreeJs.pickableObjects.push(module_droite);
-            }
-            break;
+        	delta_x = -1;
+        	break;
         case 3:
+        	delta_y = -1;
             break;
         case 4:
+        	delta_x = 1;
             break;
 
     }
-    
-}
+    if(variablesCorps.tableau_modules[(x+delta_x) + "," + (y+delta_y)] !== undefined) {return};
+   
+    const p_v_d = Vector3(pos.x+delta_x, pos.y+delta_y, pos.z);
 
+    const module_droite = initialiser_module(p_v_d, x+delta_x, y+delta_y, sceneThreeJs);
+    placer_module_dans_tableau(module_droite);
+
+    module.voisin_droite = module_droite; //on met a jour les voisins
+    module_droite.voisin_gauche = module;
+
+    sceneThreeJs.sceneGraph.add(module_droite);
+
+    sceneThreeJs.pickableObjects.push(module_droite);
+}
 
 
 //determine si on doit ajouter un autre module a gauche, droite, en haut, en bas, etc.
@@ -122,8 +137,11 @@ function determiner_type_modification(module, pointIntersection) {
 }
 
 function modifier_modele_module(module, nom_fichier) {
-    const a_detruire = module.mesh.getObjectByName("mesh");
-    module.mesh.remove(a_detruire);
+    //const a_detruire = module.mesh.getObjectByName("mesh");
+    for(var i = 0; i < module.mesh.children.length; i++) {
+    	module.mesh.remove(module.mesh.children[i]);
+    }
+    //module.mesh.remove(a_detruire);
     loadOBJ(nom_fichier, module.mesh);
 }
 
@@ -131,13 +149,15 @@ function placer_module_dans_tableau(module){
 	variablesCorps.tableau_modules[module.x + "," + module.y] = module;
 }
 
-//a partir du tableau des modules et du module passe en argument, 
+//a partir du tableau des moduledules et du module passe en argument, 
 //determine le fichier 3D qu'on doit lui appliquer
 function determiner_fichier_module(module) {
 
+	let string_booleens = determiner_booleens_voisins(module);
+
 	//les indices correspondent a gauche, puis bas, puis droite
 	const position_to_fichier = {
-		"false,false,false": COQUE_AVANT_BAS,
+		"false,false,false": COQUE_MILIEU_BAS,
 		"false,false,true": COQUE_ARRIERE_BAS,
 		"false,true,false":COQUE_MILIEU,
 		"false,true,true":COQUE_ARRIERE,
@@ -147,5 +167,27 @@ function determiner_fichier_module(module) {
 		"true,true,true":COQUE_MILIEU,
 	};
 
+	return position_to_fichier[string_booleens];
+}
 
+function determiner_booleens_voisins(module) {
+	let x = module.x;
+	let y = module.y;
+
+	const presence_gauche = (variablesCorps.tableau_modules[(x+1) + "," + y] !== undefined);
+	const presence_droite = (variablesCorps.tableau_modules[(x-1) + "," + y] !== undefined);
+	const presence_bas = (variablesCorps.tableau_modules[x + "," + (y-1)] !== undefined);
+
+	let string_booleens = presence_gauche + "," + presence_bas + "," + presence_droite;
+
+	return string_booleens;
+}
+
+//a appeler a chaque modification d'un module
+function mettre_a_jour_modele_tous_modules() {
+	for(let i = 0; i < variablesCorps.modules.length; i++) {
+		let module = variablesCorps.modules[i];
+		let fichier = determiner_fichier_module(module);
+		modifier_modele_module(module, fichier);
+	}
 }
