@@ -142,6 +142,30 @@ function onMouseMove(event, raycaster, screenSize, sceneThreeJs) {
 }
 
 function onKeyDown(event, raycaster, screenSize, sceneThreeJs) {
+    //touche numpad 1 : 97
+    switch(event.keyCode){
+        case 98:
+        sceneThreeJs.camera.position.set(5, 0, 0);
+        sceneThreeJs.camera.lookAt(0, 0, 0);
+
+        break;
+
+        case 100:
+        sceneThreeJs.camera.position.set(0, 0, 5);
+        sceneThreeJs.camera.lookAt(0, 0, 0);
+        break;
+
+        case 102:
+        sceneThreeJs.camera.position.set(0, 0, -5);
+        sceneThreeJs.camera.lookAt(0, 0, 0);
+        break;
+
+        case 104:
+        sceneThreeJs.camera.position.set(-5, 0, 0);
+        sceneThreeJs.camera.lookAt(0, 0, 0);
+        break;
+    }
+
     //keyCode de la touche supprimer : 27
     if(event.keyCode === 27){
         const n = variablesBallons.instances.length;
