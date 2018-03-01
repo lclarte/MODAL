@@ -100,7 +100,9 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
 
 //Fonction qui permet de supprimer un objet en cliquant
 //Appel dans onMouseDown, clickOn
+
 //Condition: else if (event.button === 2)
+
 removeObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingData, guiPrimitivesParam) {
 
   const xPixel = event.clientX;
@@ -121,6 +123,7 @@ removeObject: function(event, raycaster, screenSize, sceneGraph, camera, picking
 },
 
 //Fonction à appeller dans onMouseUp, sauvegarde le dessin de voile si le mode était activé
+
 saveDrawing: function(pickingData, Drawing) {
 
   pickingData.enableDragAndDrop = false;
@@ -158,6 +161,7 @@ drawingInProgress: function(event, screenSize, Drawing, sceneGraph) {
 
 //Fonction obsolète de Drag n' drop
 //Appel dans onMouseMove
+
 //Condition:else if( pickingData.enableDragAndDrop === true)
 dragDrop: function(event, screenSize, camera, pickingData) {
   // Coordonnées de la position de la souris

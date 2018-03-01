@@ -26,8 +26,38 @@ function main(){
         controls: null,
         pickableObjects: [],
     };
+    
+    /*
+        Attention, il y a une difference entre pickingData et pickableObjects : pickableObjects est pour la modification de modules du bateau
+        alors que pickingData est pour le placement des divers objets sur la coque (sail, sphere, cube, etc.)
+    */
+    const pickingData = {
+        enabled: false,
+        selectableObjects: [],
+    };
+
+    /*Constantes utilisees par la GUI*/
+    const guiPrimitivesParam = {
+        primitiveType: "Cube",
+        Size: 0.25,
+        Color: [1*255,0.3*255,0.2*255]
+    };
+
+
+    /*Constantes pour le dessin de la voile*/
+    const Drawing = {
+      sail: null,
+      sailGeometry: null,
+      vertices: [],
+      material: new THREE.LineBasicMaterial( { color: 0xff0000 } ),
+      enabled: false,
+      drawingMode: false,
+      drawingSaved: false,
+    };
+
 
     initEmptyScene(sceneThreeJs);
+    initGui(guiPrimitivesParam, sceneThreeJs, pickingData, Drawing);
     init3DObjects(sceneThreeJs);
 
     const raycaster = new THREE.Raycaster();
@@ -219,6 +249,70 @@ function initEmptyScene(sceneThreeJs) {
     sceneThreeJs.controls.enabled = false;
 
     window.addEventListener('resize', function(event){onResize(sceneThreeJs);}, false);
+}
+
+function initGui(gPP, sceneThreeJs, pickingData, Drawing) {
+    //fonctions de la GUI
+    const cubeFunction = function(){ gPP.primitiveType = "Cube"};
+    const sphereFunction = function(){ gPP.primitiveType= "Sphere"};
+    const saveFunction = function(){ saveScene(sceneThreeJs.sceneGraph); };
+    const loadFunction = function(){ loadScene(sceneThreeJs.sceneGraph,pickingData.selectableObjects); };
+    const exportOBJFunction = function(){ exportOBJ(pickingData.selectableObjects); };
+
+    //Les trois fenetres de la GUI
+    const guiPrimitivesInterface = {
+        Cube: cubeFunction,
+        Sphere: sphereFunction
+    };
+
+    const guiMenuInterface       = {
+        Save: saveFunction,
+        Load: loadFunction,
+        ExportOBJ: exportOBJFunction
+    };
+
+    const drawingFunction = function() {
+      if (Drawing.drawingMode == false) {
+        Drawing.drawingMode = true;
+        Drawing.sail = null;
+        Drawing.sailGeometry = null;
+        Drawing.vertices = [];
+      }
+
+      else {Drawing.drawingMode = false}
+
+      Drawing.saved = false;
+
+     }
+
+    const sailFunction = function() {
+
+      if (Drawing.saved = true){
+      guiPrimitivesParam.primitiveType = "Sail"
+      }
+
+    }
+
+    const guiCreationInterface   = {
+        Drawing: drawingFunction,
+        Sail: sailFunction,
+    };
+
+    const guiPrimitives = new dat.GUI();
+    guiPrimitives.add(guiPrimitivesInterface, "Cube"); //Choix de la forme à ajouter
+    guiPrimitives.add(guiPrimitivesInterface, "Sphere"); //Choix de la forme à ajouter
+    guiPrimitives.add(gPP, "Size",0,1);
+    guiPrimitives.addColor( gPP,"Color");
+
+    const guiMenu = new dat.GUI();
+    guiMenu.add(guiMenuInterface,"Save");
+    guiMenu.add(guiMenuInterface,"Load");
+    guiMenu.add(guiMenuInterface,"ExportOBJ");
+
+    const guiCreation = new dat.GUI();
+    guiCreation.add( guiCreationInterface, "Drawing");
+    guiCreation.add( guiCreationInterface, "Sail");
+
 }
 
 function calculer_intersects(event, raycaster, screenSize, sceneThreeJs, recursif=true) {
