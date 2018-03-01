@@ -8,20 +8,23 @@ return {
 //Fonction qui autorise le tracé de la voile quand on clique à la souris si le mode est activé
 //Appel dans onMouseDown
 //Condition: if ( Drawing.drawingMode && Drawing.saved === false)
+//OK implemente dans scene.js
 enableDrawing: function(Drawing) { Drawing.enabled = true;},
 
 //Fonction qui permet de placer ou supprimer des primitves en cliquant
 //Appel dans onMouseDown
 //Condition: else if( pickingData.enabled )
+//OK
 clickOn: function(event, raycaster, screenSize, sceneGraph, camera, pickingData, guiPrimitivesParam, Drawing, drawingGraph) {
   if (event.button === 0){mouseFunctions.addObject(event, raycaster, screenSize, sceneGraph, camera, pickingData, guiPrimitivesParam, Drawing);}
   else if (event.button === 2){mouseFunctions.removeObject(event, raycaster, screenSize, sceneGraph, camera, pickingData, guiPrimitivesParam);}
   else {pickingData.enableDragAndDrop = true;}
 },
 
-//Fonction qui permet de placer un objet en cliquant
-//Appel dans onMouseDown, clickOn
+//Fonction qui permet de placer un objet en cliquant 
+//Appel dans onMouseDown, clickOn -> OK pas besoin de le rajotuer dans le scene.js
 //Condition: if (event.button === 0)
+
 addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingData, guiPrimitivesParam, Drawing) {
 
   const xPixel = event.clientX;
@@ -31,7 +34,7 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
   const y = -2*yPixel/screenSize.h+1;
 
   raycaster.setFromCamera(new THREE.Vector2(x,y),camera);
-  const intersects = raycaster.intersectObjects( pickingData.selectableObjects );
+  const intersects = raycaster.intersectObjects( pickingData.selectableObjects, true);
 
   const nbrIntersection = intersects.length;
 
@@ -45,14 +48,14 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
       let extrudeGeometry = null;
       let extrudeSettings = null;
 
+
       // Creation d'un nouvel objet au point selectionné
       if (guiPrimitivesParam.primitiveType === "Cube"){
-
-          object = primitive.Cube(new THREE.Vector3(0,0,0),guiPrimitivesParam.Size,guiPrimitivesParam.Color);
+          object = primitive_object.Cube(new THREE.Vector3(0,0,0),guiPrimitivesParam.Size,guiPrimitivesParam.Color);
       }
 
       else if (guiPrimitivesParam.primitiveType === "Sphere"){
-          object = primitive.Sphere(new THREE.Vector3(0,0,0),guiPrimitivesParam.Size,guiPrimitivesParam.Color);
+          object = primitive_object.Sphere(new THREE.Vector3(0,0,0),guiPrimitivesParam.Size,guiPrimitivesParam.Color);
       }
 
       else if (guiPrimitivesParam.primitiveType === "Sail"){
@@ -63,7 +66,6 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
 
 
       object.matrixAutoUpdate = false;
-
 
       // le centre du nouvel objet est à la position:
       //   center = p + L/2 n
@@ -98,8 +100,10 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
       pickingData.selectableObjects.push(object);
 }; },
 
+
+
 //Fonction qui permet de supprimer un objet en cliquant
-//Appel dans onMouseDown, clickOn
+//Appel dans onMouseDown, clickOn -> OK pas besoin de le rajouter dans le scene.js
 
 //Condition: else if (event.button === 2)
 
@@ -123,7 +127,7 @@ removeObject: function(event, raycaster, screenSize, sceneGraph, camera, picking
 },
 
 //Fonction à appeller dans onMouseUp, sauvegarde le dessin de voile si le mode était activé
-
+//OK, ajoute dans le scene.js
 saveDrawing: function(pickingData, Drawing) {
 
   pickingData.enableDragAndDrop = false;
@@ -141,6 +145,7 @@ saveDrawing: function(pickingData, Drawing) {
 //Fonction qui fait le dessin
 //Appel dans onMouseMove
 //Condition: if (Drawing.enabled)
+//OK implemente
 drawingInProgress: function(event, screenSize, Drawing, sceneGraph) {
   const xPixel = event.clientX;
   const yPixel = event.clientY;

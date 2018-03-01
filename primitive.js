@@ -165,3 +165,172 @@ const primitive = (function() {
     };
 
 })();
+
+
+//fonctions primitive modifiees : au lieu de renvoyer une geometry, on renvoie l'objet
+const primitive_object = (function() {
+
+    return {
+
+        // p: Centre du cube [Vector3]
+        // L: Longueur d'un cotÃ© du cube
+        Cube: function(p,L,color) {
+            const geometry = new THREE.BoxGeometry( L,L,L );
+            geometry.translate(p.x,p.y,p.z);
+
+            const object = new THREE.Mesh(geometry,  MaterialRGB(color[0]/255,color[1]/255,color[2]/255))
+            return object;
+        },
+
+        // Cylindre de rÃ©volution
+        // p0: Point de dÃ©part (sur l'axe du cylindre) [Vector3]
+        // p1: Point d'arrivÃ©e (sur l'axe du cylindre) [Vector3]
+        // r: Rayon autour de l'axe
+        Cylinder: function(p0,p1,r,color) {
+            const u = p1.clone().sub(p0); // axe du cylindre
+            const L = u.length(); // longueur du cylindre
+            const geometry = new THREE.CylinderGeometry(r,r,L,20);
+
+            const u0 = new THREE.Vector3(0,1,0); // axe du cylindre par dÃ©faut de Three.js
+            const R = RotationBetweenTwoAxes(u0,u); // matrice de rotation entre u0 et u
+
+            geometry.translate(0,L/2,0); // translation du cylindre pour placer sa base Ã  l'origine (le cylindre par dÃ©faut est centrÃ©)
+            geometry.applyMatrix(R); // application de la rotation
+            geometry.translate(p0.x,p0.y,p0.z); // translation sur le point de dÃ©part
+
+            const object = new THREE.Mesh(geometry,  MaterialRGB(color[0]/255,color[1]/255,color[2]/255))
+            return object;
+        },
+
+        // Cone de base circulaire
+        // p0: point de dÃ©part au centre de l'axe [Vector3]
+        // p1: point d'arrivÃ©e (pointe du cone) [Vector3]
+        // r: rayon Ã  la base du cone
+        Cone: function(p0,p1,r,color) {
+            const u = p1.clone().sub(p0); // axe du cone
+            const L = u.length(); // longueur du cylindre
+            let geometry = new THREE.ConeGeometry(r,L,20);
+
+            const u0 = new THREE.Vector3(0,1,0); // axe du cone par dÃ©faut de Three.js
+            const R = RotationBetweenTwoAxes(u0,u); // matrice de rotation entre u0 et u
+
+            geometry.translate(0,L/2,0); // translation du cone pour placer sa base Ã  l'origine (le cylindre par dÃ©faut est centrÃ©)
+            geometry.applyMatrix(R); // application de la rotation
+            geometry.translate(p0.x,p0.y,p0.z) // translation sur le point de dÃ©part
+
+            const object = new THREE.Mesh(geometry,  MaterialRGB(color[0]/255,color[1]/255,color[2]/255))
+            return object;
+        },
+
+        // Vecteur affichable (cylindre terminant par un cone)
+        // p0: point de dÃ©part [Vector3]
+        // p1: point d'arrivÃ©e [Vector3]
+        // rCylinder: rayon du cylindre
+        // rCone: rayon Ã  la base du cone
+        // alpha: longueur du cone relative Ã  la taille du vecteur
+        Arrow: function(p0,p1,rCylinder,rCone,alpha,color) {
+            const p01 = p1.clone().sub(p0); // Vecteur p0 p1
+            const L   = p01.length(); // Longueur total du vecteur
+
+            // position de fin du cylindre:
+            //   pi = p0 + (1-alpha) (p1-p0)
+            const pi  = p0.clone().add(p01.clone().multiplyScalar(1-alpha) );
+
+            const geometry = primitive.Cylinder(p0,pi,rCylinder);
+            geometry.merge( primitive.Cone(pi,p1,rCone) );
+
+            const object = new THREE.Mesh(geometry,  MaterialRGB(color[0]/255,color[1]/255,color[2]/255))
+            return object;
+        },
+
+        // SphÃ¨re dÃ©finie par son centre et rayon
+        // p: centre [Vector3]
+        // r: rayon
+        Sphere: function(p,r,color) {
+            const geometry = new THREE.SphereGeometry(r,100,100);
+            geometry.translate(p.x,p.y,p.z);
+
+            const object = new THREE.Mesh(geometry,  MaterialRGB(color[0]/255,color[1]/255,color[2]/255))
+            return object;
+        },
+
+        Triangle: function(p0,p1,p2,color) {
+
+            const n = new THREE.Triangle(p0,p1,p2).normal();
+            const vertices = new Float32Array([
+                p0.x,p0.y,p0.z,
+                p1.x,p1.y,p1.z,
+                p2.x,p2.y,p2.z
+            ]);
+            const normal = new Float32Array([
+                n.x,n.y,n.z,
+                n.x,n.y,n.z,
+                n.x,n.y,n.z,
+            ]);
+            const uv = new Float32Array([
+                0,0,
+                1,0,
+                1,1
+            ]);
+            const geometry = new THREE.BufferGeometry();
+            geometry.addAttribute('position',new THREE.BufferAttribute(vertices,3));
+            geometry.addAttribute('normal',new THREE.BufferAttribute(normal,3));
+            const object = new THREE.Mesh(geometry,  MaterialRGB(color[0]/255,color[1]/255,color[2]/255))
+            return object;
+        },
+
+
+        Quadrangle: function(p0,p1,p2,p3,color) {
+            const n1 = new THREE.Triangle(p0,p1,p2).normal();
+            const n2 = new THREE.Triangle(p0,p2,p3).normal();
+            const vertices = new Float32Array([
+                p0.x,p0.y,p0.z,
+                p1.x,p1.y,p1.z,
+                p2.x,p2.y,p2.z,
+
+                p0.x,p0.y,p0.z,
+                p2.x,p2.y,p2.z,
+                p3.x,p3.y,p3.z
+            ]);
+            const normal = new Float32Array([
+                n1.x,n1.y,n1.z,
+                n1.x,n1.y,n1.z,
+                n1.x,n1.y,n1.z,
+
+                n2.x,n2.y,n2.z,
+                n2.x,n2.y,n2.z,
+                n2.x,n2.y,n2.z
+            ]);
+            const uv = new Float32Array([
+                0,0,
+                1,0,
+                1,1,
+
+                0,0,
+                1,1,
+                0,1
+            ]);
+
+            const geometry = new THREE.BufferGeometry();
+            geometry.addAttribute('position',new THREE.BufferAttribute(vertices,3));
+            geometry.addAttribute('normal',new THREE.BufferAttribute(normal,3));
+            geometry.addAttribute('uv',new THREE.BufferAttribute(uv,2));
+
+            const object = new THREE.Mesh(geometry,  MaterialRGB(color[0]/255,color[1]/255,color[2]/255))
+            return object;
+        },
+
+        Gear: function(p,R,r,color){
+
+          const ThorusGeometry = new THREE.TorusBufferGeometry(R,r,4,100);
+          const object = new THREE.Mesh(ThorusGeometry,MaterialRGB(color[0]/255,color[1]/255,color[2]/255));
+          return object;
+
+        }
+
+
+
+
+    };
+
+})();

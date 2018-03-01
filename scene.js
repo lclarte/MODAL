@@ -8,9 +8,8 @@ const t = {};
 //savoir dans quelle phase de conception on est
 //actuellement.
 const phases = {
-    PHASE_CORPS:   0,
-    PHASE_BALLONS: 1,
-    PHASE_DETAILS: 2,  
+    PHASE_CORPS:   0, //pour la coque et les ballons 
+    PHASE_DETAILS: 1, //lorsu'on veut ajouter des primitives ou sauvegarder ou autre
 };
 
 let phase_actuelle = phases.PHASE_CORPS;
@@ -26,13 +25,20 @@ function main(){
         controls: null,
         pickableObjects: [],
     };
+
+    const drawingThreeJs = {
+        sceneGraph: null,
+        camera: null,
+        renderer: null,
+        controls: null,
+    }
     
     /*
         Attention, il y a une difference entre pickingData et pickableObjects : pickableObjects est pour la modification de modules du bateau
         alors que pickingData est pour le placement des divers objets sur la coque (sail, sphere, cube, etc.)
     */
     const pickingData = {
-        enabled: false,
+        enabled: true,
         selectableObjects: [],
     };
 
@@ -57,8 +63,9 @@ function main(){
 
 
     initEmptyScene(sceneThreeJs);
+    initDrawing(drawingThreeJs);
     initGui(guiPrimitivesParam, sceneThreeJs, pickingData, Drawing);
-    init3DObjects(sceneThreeJs);
+    init3DObjects(sceneThreeJs, pickingData);
 
     const raycaster = new THREE.Raycaster();
 
@@ -69,15 +76,15 @@ function main(){
 
     // Fonction à appeler lors du clic de la souris: selection d'un objet
     //  (Création d'un wrapper pour y passer les paramètres souhaités)
-    const wrapperMouseDown = function(event) { onMouseDown(event, raycaster, screenSize, sceneThreeJs); };
+    const wrapperMouseDown = function(event) { onMouseDown(event, raycaster, screenSize, sceneThreeJs, pickingData, guiPrimitivesParam, Drawing, drawingThreeJs); };
     document.addEventListener( 'mousedown', wrapperMouseDown);
-    const wrapperMouseUp = function(event) {onMouseUp(event)};
+    const wrapperMouseUp = function(event) {onMouseUp(event, pickingData, Drawing)};
     document.addEventListener('mouseup', wrapperMouseUp);
-    const wrapperMouseMove = function(event) {onMouseMove(event, raycaster, screenSize, sceneThreeJs);};
+    const wrapperMouseMove = function(event) {onMouseMove(event, raycaster, sceneThreeJs, screenSize, pickingData, guiPrimitivesParam, Drawing, drawingThreeJs);};
     document.addEventListener('mousemove', wrapperMouseMove);
-    const wrapperKeyDown = function(event) {onKeyDown(event, raycaster, screenSize, sceneThreeJs)};
+    const wrapperKeyDown = function(event) {onKeyDown(event, raycaster, screenSize, sceneThreeJs, pickingData)};
     document.addEventListener('keydown', wrapperKeyDown);
-    const wrapperKeyUp = function(event) {onKeyUp(event, sceneThreeJs)};
+    const wrapperKeyUp = function(event) {onKeyUp(event, sceneThreeJs, pickingData)};
     document.addEventListener('keyup', wrapperKeyUp);
 
     // *************************** //
@@ -87,59 +94,91 @@ function main(){
 }
 
 
-function onMouseUp(event) {
-    variablesCorps.picked_module = null;
-    variablesBallons.picked_handler = null;
+function onMouseUp(event, pickingData, Drawing) {
+    variablesCorps.picked_module    = null;
+    variablesBallons.picked_handler = null; 
+
+    mouseFunctions.saveDrawing(pickingData, Drawing); //cf mouseFunction
 }
 
-function onMouseDown(event, raycaster, screenSize, sceneThreeJs) {
+function onMouseDown(event, raycaster, screenSize, sceneThreeJs, pickingData, guiPrimitivesParam, Drawing, drawingThreeJs) {
+    const drawingGraph =  drawingThreeJs.sceneGraph;
+    const drawingCamera = drawingThreeJs.camera;
+    const camera = sceneThreeJs.camera;
+    if(phase_actuelle === phases.PHASE_CORPS) {onMouseDownCorps(event, raycaster, screenSize, sceneThreeJs, pickingData);}
+    if(phase_actuelle === phases.PHASE_DETAILS) {onMouseDownDetails(event, raycaster, screenSize, sceneThreeJs.sceneGraph, camera, pickingData, guiPrimitivesParam, Drawing, drawingGraph, drawingCamera);}
+    
+}
+
+function onMouseDownCorps(event, raycaster, screenSize, sceneThreeJs, pickingData) {
     if(sceneThreeJs.controls.enabled === true) {
-        return;
-    }
-
-    const intersects = calculer_intersects(event, raycaster, screenSize, sceneThreeJs, true);
-    if(intersects.length == 0) {
-        return;
-    }
-    const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs);
-    if(event.buttons === 1){ //si seul le bouton gauche est clique 
-        if(intersects[0].object.name == "handler") {//c'est un ballon, on va le modifier en consequence
-            variablesBallons.picked_handler = intersects[0].object;
+            return;
         }
-        else{
-            variablesCorps.picked_module = intersects[0].object; //apparement
-            while(variablesCorps.picked_module.name !== "module" && variablesCorps.picked_module.name !== "sceneGraph") {
-                variablesCorps.picked_module = variablesCorps.picked_module.parent;
+
+        const intersects = calculer_intersects(event, raycaster, screenSize, sceneThreeJs, true);
+        if(intersects.length == 0) {
+            return;
+        }
+        const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs);
+        if(event.buttons === 1){ //si seul le bouton gauche est clique 
+            if(intersects[0].object.name == "handler") {//c'est un ballon, on va le modifier en consequence
+                variablesBallons.picked_handler = intersects[0].object;
             }
-            if(variablesCorps.picked_module.name === "sceneGraph") {
-                variablesCorps.picked_module = null;
+            else{
+                variablesCorps.picked_module = intersects[0].object; //apparement
+                while(variablesCorps.picked_module.name !== "module" && variablesCorps.picked_module.name !== "sceneGraph") {
+                    variablesCorps.picked_module = variablesCorps.picked_module.parent;
+                }
+                if(variablesCorps.picked_module.name === "sceneGraph") {
+                    variablesCorps.picked_module = null;
+                }
+
             }
-
         }
+        else if(event.buttons === 2) {//bouton droit -> ajout d'un nouveau ballon
+
+            const instance = initialiser_ballon(pointIntersection, sceneThreeJs);
+
+            variablesBallons.instances.push(instance);
+            sceneThreeJs.sceneGraph.add(instance.groupe);
+            sceneThreeJs.pickableObjects.push(instance.groupe);//on ajoute les handlers aux objets pickable
+
+            if(instance.mesh != null) {
+                sceneThreeJs.sceneGraph.remove(instance.mesh);
+                instance.mesh = null;
+            }        if(instance.mesh != null) {
+                sceneThreeJs.sceneGraph.remove(instance.mesh);
+                instance.mesh = null;
+            }
+            const mesh = creer_ballon_from_instance(instance, sceneThreeJs);
+            sceneThreeJs.sceneGraph.add(mesh);
+            sceneThreeJs.pickableObjects.push(mesh);
+            pickingData.selectableObjects.push(mesh);
+        }
+}
+
+function onMouseDownDetails(event, raycaster, screenSize, sceneGraph, camera, pickingData, guiPrimitivesParam, Drawing, drawingGraph, drawingCamera) {
+    if ( Drawing.drawingMode && Drawing.saved === false) {
+        mouseFunctions.enableDrawing(Drawing);
     }
-    else if(event.buttons === 2) {//bouton droit -> ajout d'un nouveau ballon
-        phase_actuelle = phases.PHASE_BALLONS;
 
-        const instance = initialiser_ballon(pointIntersection, sceneThreeJs);
-
-        variablesBallons.instances.push(instance);
-        sceneThreeJs.sceneGraph.add(instance.groupe);
-        sceneThreeJs.pickableObjects.push(instance.groupe);//on ajoute les handlers aux objets pickable
-
-        if(instance.mesh != null) {
-            sceneThreeJs.sceneGraph.remove(instance.mesh);
-            instance.mesh = null;
-        }        if(instance.mesh != null) {
-            sceneThreeJs.sceneGraph.remove(instance.mesh);
-            instance.mesh = null;
-        }
-        const mesh = creer_ballon_from_instance(instance, sceneThreeJs);
-        sceneThreeJs.sceneGraph.add(mesh);
-        sceneThreeJs.pickableObjects.push(mesh);
+    else if( pickingData.enabled ) {
+        mouseFunctions.clickOn(event, raycaster, screenSize, sceneGraph, camera, pickingData, guiPrimitivesParam, Drawing, drawingGraph);
     }
 }
 
-function onMouseMove(event, raycaster, screenSize, sceneThreeJs) {    
+function onMouseMove(event, raycaster, sceneThreeJs, screenSize, pickingData, guiPrimitivesParam, Drawing, drawingThreeJs) {
+    const drawingGraph = drawingThreeJs.sceneGraph;
+    const drawingCamera = drawingThreeJs.camera;
+
+    const camera = sceneThreeJs.camera;
+    const sceneGraph = sceneThreeJs.sceneGraph;
+
+    if(phase_actuelle === phases.PHASE_CORPS) {onMouseMoveCorps(event, raycaster, screenSize, sceneThreeJs);}
+    if(phase_actuelle === phases.PHASE_DETAILS) {onMouseMoveDetails(event, raycaster, screenSize, sceneGraph, camera, pickingData, guiPrimitivesParam, Drawing, drawingGraph, drawingCamera)}
+}
+
+function onMouseMoveCorps(event, raycaster, screenSize, sceneThreeJs) {
     if(sceneThreeJs.controls.enabled === true) {
         return;
     }
@@ -163,7 +202,18 @@ function onMouseMove(event, raycaster, screenSize, sceneThreeJs) {
     }
 }
 
-function onKeyDown(event, raycaster, screenSize, sceneThreeJs) {
+function onMouseMoveDetails(event, raycaster, screenSize, sceneGraph, camera, pickingData, guiPrimitivesParam, Drawing, drawingGraph, drawingCamera) {
+    if (Drawing.enabled) {
+      mouseFunctions.drawingInProgress(event, screenSize, Drawing, sceneGraph);
+    }
+
+    // Gestion du drag & drop
+    else if( pickingData.enableDragAndDrop === true) {
+      mouseFunctions.dragDrop(event, screenSize, camera, pickingData);
+    }
+}
+
+function onKeyDown(event, raycaster, screenSize, sceneThreeJs, pickingData) {
     //touche numpad 1 : 97
     switch(event.keyCode){
         case 98:
@@ -199,16 +249,18 @@ function onKeyDown(event, raycaster, screenSize, sceneThreeJs) {
     }
     if(event.ctrlKey) {
         sceneThreeJs.controls.enabled = true;
+        pickingData.enabled           = false;
     }
 }
 
-function onKeyUp(event, sceneThreeJs) {
+function onKeyUp(event, sceneThreeJs, pickingData) {
     if(!event.ctrlKey) {
         sceneThreeJs.controls.enabled = false;
+        pickingData.enabled           = true;
     }
 }
 
-function init3DObjects(sceneThreeJs) {
+function init3DObjects(sceneThreeJs, pickingData) {
     const sceneGraph = sceneThreeJs.sceneGraph;
                
     const planeGeometryZ = primitive.Quadrangle(Vector3(-100, -100, 0), Vector3(-100, 100, 0), Vector3(100, 100, 0), Vector3(100, -100, 0));
@@ -220,6 +272,7 @@ function init3DObjects(sceneThreeJs) {
     sceneThreeJs.pickableObjects.push(plane);
 
     const nouveau_module = initialiser_module(Vector3(0, 0, 0), 0, 0, sceneThreeJs);
+    pickingData.selectableObjects.push(nouveau_module.mesh);
     nouveau_module.x = 0;
     nouveau_module.y = 0;
 
@@ -251,10 +304,33 @@ function initEmptyScene(sceneThreeJs) {
     window.addEventListener('resize', function(event){onResize(sceneThreeJs);}, false);
 }
 
+function initDrawing(drawingThreeJs) {
+
+    drawingThreeJs.sceneGraph = new THREE.Scene();
+
+    drawingThreeJs.camera = sceneInit.createOrthographicCamera(0,0,0);
+    sceneInit.insertAmbientLight(drawingThreeJs.sceneGraph);
+
+    drawingThreeJs.renderer = sceneInit.createRenderer();
+    sceneInit.insertRenderInHtml(drawingThreeJs.renderer.domElement);
+
+    drawingThreeJs.controls = new THREE.OrbitControls( drawingThreeJs.camera, drawingThreeJs.renderer.domElement );
+
+    drawingThreeJs.controls.enabled = false;
+
+    window.addEventListener('resize', function(event){onResize(drawingThreeJs);}, false);
+}
+
 function initGui(gPP, sceneThreeJs, pickingData, Drawing) {
     //fonctions de la GUI
-    const cubeFunction = function(){ gPP.primitiveType = "Cube"};
-    const sphereFunction = function(){ gPP.primitiveType= "Sphere"};
+    const cubeFunction = function(){
+        gPP.primitiveType = "Cube";
+        phase_actuelle =  1- phase_actuelle ; //si on etait en train de placer un cube, rappuyer dessus va nous repasser en mode "PHASE_CORPS"
+    };
+    const sphereFunction = function(){
+        gPP.primitiveType= "Sphere";
+        phase_actuelle =  1- phase_actuelle ;
+    };
     const saveFunction = function(){ saveScene(sceneThreeJs.sceneGraph); };
     const loadFunction = function(){ loadScene(sceneThreeJs.sceneGraph,pickingData.selectableObjects); };
     const exportOBJFunction = function(){ exportOBJ(pickingData.selectableObjects); };
@@ -263,7 +339,7 @@ function initGui(gPP, sceneThreeJs, pickingData, Drawing) {
     const guiPrimitivesInterface = {
         Cube: cubeFunction,
         Sphere: sphereFunction
-    };
+    }; 
 
     const guiMenuInterface       = {
         Save: saveFunction,
@@ -274,21 +350,26 @@ function initGui(gPP, sceneThreeJs, pickingData, Drawing) {
     const drawingFunction = function() {
       if (Drawing.drawingMode == false) {
         Drawing.drawingMode = true;
+        phase_actuelle = phases.PHASE_DETAILS;
         Drawing.sail = null;
         Drawing.sailGeometry = null;
         Drawing.vertices = [];
       }
 
-      else {Drawing.drawingMode = false}
+      else {
+        Drawing.drawingMode = false;
+        phase_actuelle = phases.PHASE_CORPS;
+    }
 
       Drawing.saved = false;
 
-     }
+    }
 
     const sailFunction = function() {
 
       if (Drawing.saved = true){
-      guiPrimitivesParam.primitiveType = "Sail"
+        gPP.primitiveType = "Sail";
+        phase_actuelle = phases.PHASE_DETAILS; //a regler plus tard
       }
 
     }

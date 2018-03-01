@@ -1,5 +1,7 @@
 "use strict";
 
+//contient les fonctions necessaires a la sauvegarde / chargement des scenes
+
 function saveScene(sceneGraph,createdObjects) {
     download( JSON.stringify(sceneGraph), "save_scene.js" );
 }
@@ -88,3 +90,12 @@ function exportOBJ(createdObjects) {
     download( stringOBJ, "save_scene.obj" );
 
 }
+
+function download(text, name) {
+    var a = document.createElement("a");
+    var file = new Blob([text], {type: 'text/plain'});
+    a.href = URL.createObjectURL(file);
+    a.download = name;
+    a.click();
+}
+

@@ -33,6 +33,14 @@ createCamera: function(x,y,z) {
         return camera;
     },
 
+createOrthographicCamera: function(x,y,z) {
+        const camera = new THREE.OrthographicCamera();
+        camera.position.set(x,y,z);
+        camera.lookAt(0,0,0);
+
+        return camera;
+},
+
     // Initialisation du moteur de rendu
 createRenderer : function(){
         const renderer = new THREE.WebGLRenderer({antialias:true} );
