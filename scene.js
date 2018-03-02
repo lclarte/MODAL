@@ -323,13 +323,17 @@ function initDrawing(drawingThreeJs) {
 
 function initGui(gPP, sceneThreeJs, pickingData, Drawing) {
     //fonctions de la GUI
+    const corpsFunction = function() {
+    	phase_actuelle = phases.PHASE_CORPS;
+    };
+
     const cubeFunction = function(){
         gPP.primitiveType = "Cube";
-        phase_actuelle =  1- phase_actuelle ; //si on etait en train de placer un cube, rappuyer dessus va nous repasser en mode "PHASE_CORPS"
+        phase_actuelle =  phases.PHASE_DETAILS; //si on etait en train de placer un cube, rappuyer dessus va nous repasser en mode "PHASE_CORPS"
     };
     const sphereFunction = function(){
         gPP.primitiveType= "Sphere";
-        phase_actuelle =  1- phase_actuelle ;
+        phase_actuelle =  phases.PHASE_DETAILS;
     };
     const saveFunction = function(){ saveScene(sceneThreeJs.sceneGraph); };
     const loadFunction = function(){ loadScene(sceneThreeJs.sceneGraph,pickingData.selectableObjects); };
@@ -337,6 +341,7 @@ function initGui(gPP, sceneThreeJs, pickingData, Drawing) {
 
     //Les trois fenetres de la GUI
     const guiPrimitivesInterface = {
+    	Normal: corpsFunction, //bouton pour modifier le corps du bateau
         Cube: cubeFunction,
         Sphere: sphereFunction
     }; 
@@ -358,7 +363,6 @@ function initGui(gPP, sceneThreeJs, pickingData, Drawing) {
 
       else {
         Drawing.drawingMode = false;
-        phase_actuelle = phases.PHASE_CORPS;
     }
 
       Drawing.saved = false;
@@ -380,6 +384,7 @@ function initGui(gPP, sceneThreeJs, pickingData, Drawing) {
     };
 
     const guiPrimitives = new dat.GUI();
+    guiPrimitives.add(guiPrimitivesInterface, "Normal");
     guiPrimitives.add(guiPrimitivesInterface, "Cube"); //Choix de la forme à ajouter
     guiPrimitives.add(guiPrimitivesInterface, "Sphere"); //Choix de la forme à ajouter
     guiPrimitives.add(gPP, "Size",0,1);

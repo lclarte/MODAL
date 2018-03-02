@@ -3,6 +3,7 @@
 /*
 Appui sur la touche controle : desactivation de controls.enabled
 Touche controle relachee : on reactive enabled
+
 */
 
 function onMouseUp(event) {
