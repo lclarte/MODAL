@@ -75,7 +75,7 @@ function initialiser_module(centre, x, y, sceneThreeJs){
 }
 
 
-function ajouter_module(module, pointIntersection, sceneThreeJs) {
+function ajouter_module(module, pointIntersection, sceneThreeJs, pickingData) {
 	let x = module.x;
 	let y = module.y;
 
@@ -114,12 +114,14 @@ function ajouter_module(module, pointIntersection, sceneThreeJs) {
     const module_droite = initialiser_module(p_v_d, x+delta_x, y+delta_y, sceneThreeJs);
     placer_module_dans_tableau(module_droite);
 
+
     module.voisin_droite = module_droite; //on met a jour les voisins
     module_droite.voisin_gauche = module;
 
     sceneThreeJs.sceneGraph.add(module_droite);
 
     sceneThreeJs.pickableObjects.push(module_droite);
+    pickingData.selectableObjects.push(module_droite);
 }
 
 
