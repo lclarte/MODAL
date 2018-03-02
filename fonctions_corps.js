@@ -39,6 +39,7 @@ function initialiser_module(centre, x, y, sceneThreeJs){
 
     const nouveau_module = new THREE.Group();
     nouveau_module.name = "module";
+    nouveau_module.details = []; // va contenir tous les details qui sont dans le module
 
     nouveau_module.x = Math.round(x);
     nouveau_module.y = Math.round(y);

@@ -43,11 +43,20 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
       const intersection = intersects[0];
 
       const p = intersection.point;
+      let o = intersection.object;
+
       const n = intersection.face.normal;
       let object = null;
       let extrudeGeometry = null;
       let extrudeSettings = null;
 
+      while(o.name != "module" && o.parent !== null) {
+        o = o.parent;
+      }
+      if(o.name !== "module") {
+        return; //on peut ajouter l'objet que si "le support" sera un bout de la coque
+        //c'est necessaire pour gerer efficacement le copier coller de coque
+      }
 
       // Creation d'un nouvel objet au point selectionné
       if (guiPrimitivesParam.primitiveType === "Cube"){
@@ -63,6 +72,9 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
          extrudeGeometry = new THREE.ExtrudeBufferGeometry( Drawing.sailGeometry, extrudeSettings );
          object = new THREE.Mesh( extrudeGeometry, MaterialRGB(0.9,0.9,0.9) ) ;
       }
+      o.details.push(object); //a ce stade, on sait deja que l'objet sur lequel on va l'ajouter est un bout de coque
+      console.log(o.details);
+
 
 
       object.matrixAutoUpdate = false;
@@ -79,9 +91,7 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
       const theta = Math.acos( n.clone().z );
       const Rotate = new THREE.Matrix4().makeRotationAxis(axis.normalize(),theta);
       object.geometry.applyMatrix(Rotate);
-      object.updateMatrix();
-      console.log(object);
-      console.log(p);
+      object.updateMatrix(); 
       if (guiPrimitivesParam.primitiveType != "Sail"){
         object.position.copy( center );
       }
