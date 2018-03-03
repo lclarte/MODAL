@@ -350,6 +350,11 @@ function loadOBJ(nom_fichier, receveur) {
     loader.load(nom_fichier,
         function(objet) {
             objet.name = "mesh";
+            objet.traverse(function (child) {
+            	if(child instanceof THREE.Mesh) {
+            		child.material = new THREE.MeshLambertMaterial({color: 0x421d20});
+            	}
+            })
             receveur.add(objet); //malheureusement, on est oblige de faire comme ça 
         });
 }

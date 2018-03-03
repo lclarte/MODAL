@@ -27,6 +27,7 @@ insertAmbientLight: function(sceneGraph) {
     // Création et ajout d'une caméra dans le graphe de scène
 createCamera: function(x,y,z) {
         const camera = new THREE.PerspectiveCamera(45,window.innerWidth/window.innerHeight,0.1,500);
+        camera.far = 10000;
         camera.position.set(x,y,z);
         camera.lookAt(0,0,0);
 
