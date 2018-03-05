@@ -58,6 +58,7 @@ function initialiser_module(centre, x, y, sceneThreeJs){
     const modele = determiner_fichier_module(nouveau_module);
 
     loadOBJ(modele, nouveau_module.mesh);
+    console.log("retour vaut", nouveau_module.mesh);
 
     nouveau_module.mesh.name = "mesh";
     sceneThreeJs.pickableObjects.push(nouveau_module.mesh);
@@ -140,10 +141,12 @@ function determiner_type_modification(module, pointIntersection) {
 }
 
 function modifier_modele_module(module, nom_fichier) {
+    console.log("avant : ", module.mesh.children);
     //const a_detruire = module.mesh.getObjectByName("mesh");
     for(var i = 0; i < module.mesh.children.length; i++) {
     	module.mesh.remove(module.mesh.children[i]);
     }
+    console.log("apres : ", module.mesh.children);
     //module.mesh.remove(a_detruire);
     loadOBJ(nom_fichier, module.mesh);
 }
@@ -191,6 +194,7 @@ function mettre_a_jour_modele_tous_modules() {
 	for(let i = 0; i < variablesCorps.modules.length; i++) {
 		let module = variablesCorps.modules[i];
 		let fichier = determiner_fichier_module(module);
-		modifier_modele_module(module, fichier);
+        modifier_modele_module(module, fichier);
+        module.fichier = fichier;
 	}
 }

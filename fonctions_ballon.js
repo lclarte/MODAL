@@ -35,7 +35,7 @@ function initialiser_ballon(centre) {
             const pos = position_defaut_handlers[2*axe+positif];
             instance.handlers[2*axe+positif].position.set(pos.x, pos.y, pos.z);
             instance.groupe.add(instance.handlers[2*axe+positif]);
-            //sceneThreeJs.pickableObjects.push(instance.handlers[2*axe+positif]);
+            //sceneThreeJs.pickableObjects.push(instance.handlers[2*axe+peositif]);
         }
     }
 

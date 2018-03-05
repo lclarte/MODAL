@@ -2,6 +2,8 @@
 
 const t = {};
 
+const loader = new THREE.OBJLoader();
+
 //remarque importante : on peut ajouter des champs 
 
 //cette structure constitue une enumeration pour 
@@ -332,8 +334,8 @@ function distance(p1, p2) {
     return norme(v);
 }
 
-function argmin(tableau) {
-    let indice_min = 0;
+function argmin(tableau){
+    let indice_min  = 0;
     for(let i = 0; i < tableau.length; i++) {
         if(tableau[i] < tableau[indice_min]) {
             indice_min = i;
@@ -342,8 +344,9 @@ function argmin(tableau) {
     return indice_min;
 }
 
+
 //Fonctions de chargement des .OBJ
-function loadOBJ(nom_fichier, receveur) {
+function loadOBJ(nom_fichier, receveur){
     //objet3D est l'objet qui va contenir l'objet du ficheir .obj
     const loader = new THREE.OBJLoader();
     let retour = new THREE.Object3D();

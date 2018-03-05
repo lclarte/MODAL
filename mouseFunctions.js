@@ -1,5 +1,7 @@
 "use strict";
 
+const fichier_canon = "modeles/canon.obj" ;
+const fichier_engrenage = "modeles/gear.obj"; 
 
 const mouseFunctions = (function() {
 
@@ -46,7 +48,7 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
       let o = intersection.object;
 
       const n = intersection.face.normal;
-      let object = null;
+      let object = new THREE.Object3D();
       let extrudeGeometry = null;
       let extrudeSettings = null;
 
@@ -60,11 +62,18 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
 
       // Creation d'un nouvel objet au point selectionné
       if (guiPrimitivesParam.primitiveType === "Cube"){
+          /*
+          VERSION D'AVANT : on place un cube 
           object = primitive_object.Cube(new THREE.Vector3(0,0,0),guiPrimitivesParam.Size,guiPrimitivesParam.Color);
+          */
+          loadOBJ(fichier_canon, object);
       }
 
       else if (guiPrimitivesParam.primitiveType === "Sphere"){
+        /*  VERSION D'AVANT : on place une sphere
           object = primitive_object.Sphere(new THREE.Vector3(0,0,0),guiPrimitivesParam.Size,guiPrimitivesParam.Color);
+          */
+          loadOBJ(fichier_engrenage, object);
       }
 
       else if (guiPrimitivesParam.primitiveType === "Sail"){
@@ -73,9 +82,6 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
          object = new THREE.Mesh( extrudeGeometry, MaterialRGB(0.9,0.9,0.9) ) ;
       }
       o.details.push(object); //a ce stade, on sait deja que l'objet sur lequel on va l'ajouter est un bout de coque
-      console.log(o.details);
-
-
 
       object.matrixAutoUpdate = false;
 
