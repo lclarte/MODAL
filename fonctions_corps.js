@@ -27,7 +27,7 @@ const tableau_transformation_modeles = {
 tableau_transformation_modeles["modeles/coque_avant.obj"] = [[COQUE_AVANT, COQUE_AVANT], [COQUE_MILIEU, COQUE_AVANT], [COQUE_MILIEU, COQUE_MILIEU], [COQUE_AVANT, COQUE_MILIEU]];
 tableau_transformation_modeles["modeles/coque_milieu.obj"]= [[COQUE_MILIEU, COQUE_MILIEU], [COQUE_MILIEU, COQUE_AVANT], [COQUE_MILIEU, COQUE_MILIEU], [COQUE_MILIEU, COQUE_MILIEU]];
 
-
+new THREE.MeshLambertMaterial({color: 0x421d20});
 */
 
 //Fonction qui cree un module -> mesh + un handler
@@ -52,13 +52,17 @@ function initialiser_module(centre, x, y, sceneThreeJs){
     nouveau_module.voisin_haut      = null;
     nouveau_module.voisin_bas       = null;
 
-    nouveau_module.mesh = new THREE.Object3D();
-    nouveau_module.mesh.rotateY(-Math.PI/2);
-
     const modele = determiner_fichier_module(nouveau_module);
-
-    loadOBJ(modele, nouveau_module.mesh);
-    console.log("retour vaut", nouveau_module.mesh);
+    
+    nouveau_module.mesh = new THREE.Object3D();
+    nouveau_module.mesh.add(modeles[modele].clone());
+    nouveau_module.mesh.traverse(function (child) {
+        if(child instanceof THREE.Mesh) {
+            child.material = new THREE.MeshLambertMaterial({color: 0x421d20});
+        }
+    });
+    
+    nouveau_module.mesh.rotateY(-Math.PI/2);
 
     nouveau_module.mesh.name = "mesh";
     sceneThreeJs.pickableObjects.push(nouveau_module.mesh);
@@ -141,14 +145,12 @@ function determiner_type_modification(module, pointIntersection) {
 }
 
 function modifier_modele_module(module, nom_fichier) {
-    console.log("avant : ", module.mesh.children);
     //const a_detruire = module.mesh.getObjectByName("mesh");
     for(var i = 0; i < module.mesh.children.length; i++) {
     	module.mesh.remove(module.mesh.children[i]);
     }
-    console.log("apres : ", module.mesh.children);
     //module.mesh.remove(a_detruire);
-    loadOBJ(nom_fichier, module.mesh);
+    module.mesh.add(modeles[nom_fichier].clone());
 }
 
 function placer_module_dans_tableau(module){
@@ -194,7 +196,9 @@ function mettre_a_jour_modele_tous_modules() {
 	for(let i = 0; i < variablesCorps.modules.length; i++) {
 		let module = variablesCorps.modules[i];
 		let fichier = determiner_fichier_module(module);
-        modifier_modele_module(module, fichier);
-        module.fichier = fichier;
+        if(module.fichier !== fichier) {
+            modifier_modele_module(module, fichier);
+            module.fichier = fichier;
+        }
 	}
 }

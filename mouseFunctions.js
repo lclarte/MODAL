@@ -62,18 +62,11 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
 
       // Creation d'un nouvel objet au point selectionné
       if (guiPrimitivesParam.primitiveType === "Cube"){
-          /*
-          VERSION D'AVANT : on place un cube 
           object = primitive_object.Cube(new THREE.Vector3(0,0,0),guiPrimitivesParam.Size,guiPrimitivesParam.Color);
-          */
-          loadOBJ(fichier_canon, object);
       }
 
       else if (guiPrimitivesParam.primitiveType === "Sphere"){
-        /*  VERSION D'AVANT : on place une sphere
           object = primitive_object.Sphere(new THREE.Vector3(0,0,0),guiPrimitivesParam.Size,guiPrimitivesParam.Color);
-          */
-          loadOBJ(fichier_engrenage, object);
       }
 
       else if (guiPrimitivesParam.primitiveType === "Sail"){

@@ -1,6 +1,12 @@
 "use strict";
 
-const t = {};
+let initialise_modeles_vide = false;
+
+const ENGRENAGE = "modeles/gear.obj";
+const CANON     = "modeles/canon.obj";
+
+let modeles = {}; //tableau stockant les modeles 3D
+const noms_fichiers = [COQUE_AVANT, COQUE_AVANT_BAS, COQUE_MILIEU, COQUE_MILIEU_BAS, ENGRENAGE, CANON];
 
 const loader = new THREE.OBJLoader();
 
@@ -67,7 +73,6 @@ function main(){
     initEmptyScene(sceneThreeJs);
     initDrawing(drawingThreeJs);
     initGui(guiPrimitivesParam, sceneThreeJs, pickingData, Drawing);
-    init3DObjects(sceneThreeJs, pickingData);
 
     const raycaster = new THREE.Raycaster();
 
@@ -92,7 +97,7 @@ function main(){
     // *************************** //
     // Lancement de l'animation
     // *************************** //s
-    animationLoop(sceneThreeJs);
+    animationLoop(sceneThreeJs, pickingData);
 }
 
 function init3DObjects(sceneThreeJs, pickingData) {
@@ -105,6 +110,7 @@ function init3DObjects(sceneThreeJs, pickingData) {
     plane.name = "planZ"; //Z est la normale a ce plan => plan XY
     sceneGraph.add(plane);
     sceneThreeJs.pickableObjects.push(plane);
+    
 
     const nouveau_module = initialiser_module(Vector3(0, 0, 0), 0, 0, sceneThreeJs);
     pickingData.selectableObjects.push(nouveau_module.mesh);
@@ -113,12 +119,15 @@ function init3DObjects(sceneThreeJs, pickingData) {
 
     placer_module_dans_tableau(nouveau_module);
     sceneThreeJs.sceneGraph.add(nouveau_module);
+
 }
 
 // Fonction d'initialisation d'une scène 3D sans objets 3D
 //  Création d'un graphe de scène et ajout d'une caméra et d'une lumière.
 //  Création d'un moteur de rendu et ajout dans le document HTML
 function initEmptyScene(sceneThreeJs) {
+
+    initialiser_modeles_3D();
 
     sceneThreeJs.sceneGraph = new THREE.Scene();
     sceneThreeJs.sceneGraph.name = "sceneGraph";
@@ -274,7 +283,11 @@ function animate(sceneThreeJs, time) {
 }
 
 // Fonction de gestion d'animation
-function animationLoop(sceneThreeJs) {
+function animationLoop(sceneThreeJs, pickingData) {
+    if(Object.keys(modeles).length == noms_fichiers.length && !initialise_modeles_vide) {
+        initialise_modeles_vide = true;
+        init3DObjects(sceneThreeJs, pickingData);
+    }
 
     // Fonction JavaScript de demande d'image courante à afficher
     requestAnimationFrame(
@@ -282,7 +295,7 @@ function animationLoop(sceneThreeJs) {
         // La fonction (dite de callback) recoit en paramètre le temps courant
         function(timeStamp){
             animate(sceneThreeJs,timeStamp); // appel de notre fonction d'animation
-            animationLoop(sceneThreeJs); // relance une nouvelle demande de mise à jour
+            animationLoop(sceneThreeJs, pickingData); // relance une nouvelle demande de mise à jour
         }
     );
 }
@@ -366,4 +379,20 @@ function creerPoint(v, r) {
     const geometry = primitive.Sphere(v, r);
     const mesh = new THREE.Mesh(geometry, MaterialRGB(0.5, 0.5, 0.5));
     return mesh;
+}
+
+function initialiser_modeles_3D() {
+    modeles = {};
+
+    for(var n_f in noms_fichiers) {
+        loadOBJ_tableau(noms_fichiers[n_f]);
+    }
+}
+
+function loadOBJ_tableau(nom_fichier) {
+    const loader = new THREE.OBJLoader();
+    loader.load(nom_fichier,
+        function(objet) {
+            modeles[nom_fichier] = objet ; //pb iici !!!!
+    });
 }
