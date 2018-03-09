@@ -34,7 +34,7 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
   const y = -2*yPixel/screenSize.h+1;
 
   raycaster.setFromCamera(new THREE.Vector2(x,y),camera);
-  const intersects = raycaster.intersectObjects( pickingData.selectableObjects, true);
+  const intersects = raycaster.intersectObjects(pickingData.selectableObjects, true);
 
   const nbrIntersection = intersects.length;
 
@@ -69,7 +69,7 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
 
       else if (guiPrimitivesParam.primitiveType === "Sail"){
          extrudeSettings = { amount: 0.01, bevelEnabled:false };
-         extrudeGeometry = new THREE.ExtrudeBufferGeometry( Drawing.sailGeometry, extrudeSettings );
+         extrudeGeometry = new THREE.ExtrudeBufferGeometry( Drawing.sailGeometry, extrudeSettings);
          object = new THREE.Mesh( extrudeGeometry, MaterialRGB(0.9,0.9,0.9) ) ;
       }
       o.details.push(object); //a ce stade, on sait deja que l'objet sur lequel on va l'ajouter est un bout de coque

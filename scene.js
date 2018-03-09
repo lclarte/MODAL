@@ -40,6 +40,8 @@ function main(){
     const pickingData = {
         enabled: true,
         selectableObjects: [],
+        selectedObject: null, // selectedObjet et selectedPlane servent pour le deplacement des objets comme dans le TP 2
+        selectedPlane: {p: null, n: null}, //plan de la camera au moment de la selection : position p et normale n
     };
 
     /*Constantes utilisees par la GUI*/
@@ -245,7 +247,7 @@ function calculer_intersects(event, raycaster, screenSize, sceneThreeJs, recursi
     const y = -2*yPixel/screenSize.h + 1;
 
     raycaster.setFromCamera(Vector2(x, y), camera);
-    const intersects = raycaster.intersectObjects(sceneThreeJs.sceneGraph.children, recursif);
+    const intersects = raycaster.intersectObjects(sceneThreeJs.pickableObjects, recursif);
     return intersects;
 }
 
@@ -259,6 +261,40 @@ function calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs)
         return pointIntersection;
     }
     return null;
+}
+
+//voir seance de TP numero 2
+function deplacer_objet_methode_2(event, screenSize, intersects, camera, pickingData) {
+	const xPixel = event.clientX;
+    const yPixel = event.clientY;
+
+    const x =  2*xPixel/screenSize.w-1;
+    const y = -2*yPixel/screenSize.h+1;
+        // Projection inverse passant du point 2D sur l'écran à un point 3D
+    const selectedPoint = Vector3(x, y, 0.5 /*valeur de z après projection*/ );
+	selectedPoint.unproject( camera );
+
+	// Direction du rayon passant par le point selectionné
+        const p0 = camera.position;
+        const d = selectedPoint.clone().sub( p0 );
+
+        // Intersection entre le rayon 3D et le plan de la camera
+        const p = pickingData.selectedPlane.p;
+        const n = pickingData.selectedPlane.n;
+        // tI = <p-p0,n> / <d,n>
+        const tI = ( (p.clone().sub(p0)).dot(n) ) / ( d.dot(n) );
+        // pI = p0 + tI d
+        const pI = (d.clone().multiplyScalar(tI)).add(p0); // le point d'intersection
+
+        // Translation à appliquer
+        const translation = pI.clone().sub( p );
+
+        // Translation de l'objet et de la représentation visuelle
+        pickingData.selectedObject.translateX( translation.x );
+        pickingData.selectedObject.translateY( translation.y );
+        pickingData.selectedObject.translateZ( translation.z );
+
+pickingData.selectedPlane.p.add( translation );
 }
 
 // Demande le rendu de la scène 3D

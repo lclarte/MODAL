@@ -10,6 +10,7 @@ const variablesBallons = {
     //-> la position du centre
     //-> un groupe pour regrouper les handlers; la position relative des handlers par rapport au centre
     picked_handler: null, //le handler selectionnne lors du clic de la souris
+    picked_groupe: null,
 };
 
 //retourne l'instance qu'on vient de creer
@@ -19,6 +20,7 @@ function initialiser_ballon(centre) {
     instance.groupe = new THREE.Group();//groupe contient les handlers Object3D
     instance.groupe.name = "groupe_handlers";
     instance.groupe.position.set(centre.x, centre.y, centre.z);
+    instance.groupe.instance = instance;
     instance.handlers = [];
 
     for(var axe = 0; axe < 3; axe++) {
@@ -110,6 +112,36 @@ function creer_ballon_from_instance(instance, sceneThreeJs) {
     //a mettre apres la fonction pour ajouter le ballon : 
 }
 
+function creer_ficelles_from_instance(instance, modules, sceneGraph){
+    for(let i = 0; i < instance.handlers.length; i++) {
+        let handler = instance.handlers[i];
+        let position = Vector3(0, 0, 0);
+        position.copy(instance.groupe.position);
+        position.add(handler.position);
+        let distance_min = Infinity;
+        let indice_min   = 0;
+        for(let j = 0; j < modules.length; j++) {
+            let module  = modules[j];
+            let distance = calculer_distance_3(module.position, handler.position);  
+            if(distance < distance_min) {
+                distance_min = distance;
+                indice_min = j;
+            }
+        }
+        const ficelle = primitive_object.Cylinder(position, modules[indice_min].position, 0.001, [0, 0, 0]);
+        ficelle.name = "ficelle";
+        sceneGraph.add(ficelle);
+    }
+}
+
+function supprimer_ficelles(sceneGraph) {
+    let objet_a_supprimer = sceneGraph.getObjectByName("ficelle");
+    while(objet_a_supprimer != null) {
+        sceneGraph.remove(objet_a_supprimer);
+        objet_a_supprimer = sceneGraph.getObjectByName("ficelle");
+    }
+}
+
 function Vector3(x,y,z) {
     return new THREE.Vector3(x,y,z);
 }
@@ -123,3 +155,6 @@ function MaterialRGB(r,g,b) {
     return new THREE.MeshLambertMaterial( {color:c} );
 }
 
+function calculer_distance_3(p1, p2) {
+    return Math.sqrt((p1.x-p2.x)**2 + (p1.y-p2.y)**2 + (p1.z - p2.z)**2);
+}
