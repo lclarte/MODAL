@@ -30,6 +30,14 @@ tableau_transformation_modeles["modeles/coque_milieu.obj"]= [[COQUE_MILIEU, COQU
 new THREE.MeshLambertMaterial({color: 0x421d20});
 */
 
+function colorier_mesh_obj(mesh, couleur) {
+    mesh.traverse(function (child) {
+        if(child instanceof THREE.Mesh) {
+            child.material = new THREE.MeshLambertMaterial({color: couleur});
+        }
+    });
+}
+
 //Fonction qui cree un module -> mesh + un handler
 //centre : position du centre
 //nom_fichier : nom_du_fichier du mesh
@@ -56,11 +64,8 @@ function initialiser_module(centre, x, y, sceneThreeJs){
     
     nouveau_module.mesh = new THREE.Object3D();
     nouveau_module.mesh.add(modeles[modele].clone());
-    nouveau_module.mesh.traverse(function (child) {
-        if(child instanceof THREE.Mesh) {
-            child.material = new THREE.MeshLambertMaterial({color: 0x421d20});
-        }
-    });
+
+    //colorier_mesh_obj(nouveau_module.mesh, 0x421d20);
     
     nouveau_module.mesh.rotateY(-Math.PI/2);
 
@@ -151,6 +156,7 @@ function modifier_modele_module(module, nom_fichier) {
     }
     //module.mesh.remove(a_detruire);
     module.mesh.add(modeles[nom_fichier].clone());
+    //colorier_mesh_obj(module.mesh, 0x421d20);
 }
 
 function placer_module_dans_tableau(module){
@@ -201,4 +207,46 @@ function mettre_a_jour_modele_tous_modules() {
             module.fichier = fichier;
         }
 	}
+}
+
+//determine quels modules de la coque sont le plus en arriere pour leur ajouter des helices
+function determiner_extremite_arriere() {
+    let modules = variablesCorps.modules;
+    let indice_min = 0; //indice d'un des modules les plus en arriere
+    let indices    = [];
+
+    for(let i = 0; i < modules.length; i++) {
+        if(modules[i].x > modules[indice_min].x) { //on met un signe superieur car dans notre modeleur les x positifs et negatifs
+            //sont inverses
+            indice_min = i;
+            indices    = [i];
+        }
+        else if(modules[i].x == modules[indice_min].x) {
+            indices.push(i);
+        }
+    }
+
+    return indices;
+}
+
+//ajoute des helices au bout de chaque bout de coque qui est a l'extremite arriere
+function ajouter_helices(sceneGraph, modules_arriere) {
+    for(let i = 0; i < modules_arriere.length; i++) {
+        let module = variablesCorps.modules[modules_arriere[i]];
+        const helice_mesh = new THREE.Object3D();
+        helice_mesh.add(modeles[HELICE]);
+        helice_mesh.name = "helice";
+        helice_mesh.translateX(0.65);
+        helice_mesh.rotateY(Math.PI/2);
+        module.add(helice_mesh.clone());
+    }
+}
+
+
+function retirer_helices() {
+    for(let i = 0; i < variablesCorps.modules.length; i++){
+        let module =  variablesCorps.modules[i];
+        let objet = module.getObjectByName("helice");
+        module.remove(objet);
+    }
 }

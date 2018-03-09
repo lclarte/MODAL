@@ -106,6 +106,10 @@ function onMouseMoveCorps(event, raycaster, screenSize, sceneThreeJs, pickingDat
     if(variablesCorps.picked_module != null) {
         ajouter_module(variablesCorps.picked_module, pointIntersection, sceneThreeJs, pickingData);
         mettre_a_jour_modele_tous_modules();
+
+        retirer_helices();
+        let tableau = determiner_extremite_arriere();
+        ajouter_helices(sceneThreeJs.sceneGraph, tableau);
     }
     else if(variablesBallons.picked_groupe != null) {
         deplacer_objet_methode_2(event, screenSize, intersects, sceneThreeJs.camera, pickingData);

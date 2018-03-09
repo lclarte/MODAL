@@ -4,9 +4,10 @@ let initialise_modeles_vide = false;
 
 const ENGRENAGE = "modeles/gear.obj";
 const CANON     = "modeles/canon.obj";
+const HELICE    = "modeles/helice.obj";
 
 let modeles = {}; //tableau stockant les modeles 3D
-const noms_fichiers = [COQUE_AVANT, COQUE_AVANT_BAS, COQUE_MILIEU, COQUE_MILIEU_BAS, ENGRENAGE, CANON];
+const noms_fichiers = [COQUE_AVANT, COQUE_AVANT_BAS, COQUE_MILIEU, COQUE_MILIEU_BAS, ENGRENAGE, CANON, HELICE];
 
 const loader = new THREE.OBJLoader();
 
@@ -313,6 +314,7 @@ function render(sceneThreeJs) {
     sceneThreeJs.renderer.render(sceneThreeJs.sceneGraph, sceneThreeJs.camera);
 }
 
+
 function animate(sceneThreeJs, time) {
     const t = time/1000;//time in second
     render(sceneThreeJs);
@@ -330,6 +332,7 @@ function animationLoop(sceneThreeJs, pickingData) {
 
         // La fonction (dite de callback) recoit en paramètre le temps courant
         function(timeStamp){
+
             animate(sceneThreeJs,timeStamp); // appel de notre fonction d'animation
             animationLoop(sceneThreeJs, pickingData); // relance une nouvelle demande de mise à jour
         }
