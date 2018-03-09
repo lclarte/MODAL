@@ -4,7 +4,7 @@ function onMouseUp(event, pickingData, Drawing) {
     variablesCorps.picked_module    = null;
     variablesBallons.picked_handler = null; 
     variablesBallons.picked_groupe  = null;
-    pickingData.selectedObject = null;
+    pickingData.selectedObject      = null;
 
     mouseFunctions.saveDrawing(pickingData, Drawing); //cf mouseFunction
 }
@@ -31,6 +31,7 @@ function onMouseDownCorps(event, raycaster, screenSize, sceneThreeJs, pickingDat
         if(event.buttons === 1){ //si seul le bouton gauche est clique 
             if(intersects[0].object.name == "ballon") {
                 variablesBallons.picked_groupe = intersects[0].object.instance.groupe;
+
                 pickingData.selectedObject = variablesBallons.picked_groupe;
                 pickingData.selectedPlane.p = intersects[0].point.clone();
                 pickingData.selectedPlane.n = sceneThreeJs.camera.getWorldDirection().clone();

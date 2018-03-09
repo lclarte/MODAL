@@ -1,6 +1,7 @@
 "use strict";
 
 let initialise_modeles_vide = false;
+let temps_precedent = 0;
 
 const ENGRENAGE = "modeles/gear.obj";
 const CANON     = "modeles/canon.obj";
@@ -317,7 +318,12 @@ function render(sceneThreeJs) {
 
 function animate(sceneThreeJs, time) {
     const t = time/1000;//time in second
+    const delta = t - temps_precedent;
+
+    tourner_helices(delta);
+
     render(sceneThreeJs);
+    temps_precedent = t;
 }
 
 // Fonction de gestion d'animation
@@ -332,7 +338,6 @@ function animationLoop(sceneThreeJs, pickingData) {
 
         // La fonction (dite de callback) recoit en paramètre le temps courant
         function(timeStamp){
-
             animate(sceneThreeJs,timeStamp); // appel de notre fonction d'animation
             animationLoop(sceneThreeJs, pickingData); // relance une nouvelle demande de mise à jour
         }
