@@ -46,7 +46,7 @@ function onMouseDownCorps(event, raycaster, screenSize, sceneThreeJs, pickingDat
             }
             else{
                 variablesCorps.picked_module = intersects[0].object; //apparement
-                while(variablesCorps.picked_module.name !== "module" && variablesCorps.picked_module.name !== "sceneGraph") {
+                while(variablesCorps.picked_module !== null && variablesCorps.picked_module.name !== "module" && variablesCorps.picked_module.name !== "sceneGraph") {
                     variablesCorps.picked_module = variablesCorps.picked_module.parent;
                 }
                 if(variablesCorps.picked_module.name === "sceneGraph") {

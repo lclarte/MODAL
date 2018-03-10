@@ -118,7 +118,7 @@ function creer_ballon_from_instance(instance, sceneThreeJs) {
         v_pos.y = v_pos.y*(Math.abs(instance.handlers[2+indice_y].position.y)/R_B_D);
         v_pos.z = v_pos.z*(Math.abs(instance.handlers[4+indice_z].position.z)/R_B_D);
     }
-    const mesh = new THREE.Mesh(sphereGeometry, MaterialRGB(1.5, 1.3, 1.3));
+    const mesh = new THREE.Mesh(sphereGeometry, MaterialRGB(1.0, 1.0, 1.0));
     mesh.position.set(centre.x, centre.y, centre.z);
     mesh.name = "ballon";
     instance.mesh = mesh;
@@ -145,7 +145,7 @@ function creer_ficelles_from_instance(instance, modules, sceneGraph){
                 indice_min = j;
             }
         }
-        const ficelle = primitive_object.Cylinder(position, modules[indice_min].position, 0.001, [0, 0, 0]);
+        const ficelle = primitive_object.Cylinder(position, modules[indice_min].position, 0.01, [255, 255,255]);
         ficelle.name = "ficelle";
         sceneGraph.add(ficelle);
     }
