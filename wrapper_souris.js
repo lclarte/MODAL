@@ -39,6 +39,10 @@ function onMouseDownCorps(event, raycaster, screenSize, sceneThreeJs, pickingDat
             }
             if(intersects[0].object.name == "handler") {//c'est un ballon, on va le modifier en consequence
                 variablesBallons.picked_handler = intersects[0].object;
+
+                pickingData.selectedObject = variablesBallons.picked_handler;
+                pickingData.selectedPlane.p = intersects[0].point.clone();
+                pickingData.selectedPlane.n = sceneThreeJs.camera.getWorldDirection().clone(); 
             }
             else{
                 variablesCorps.picked_module = intersects[0].object; //apparement
@@ -126,7 +130,9 @@ function onMouseMoveCorps(event, raycaster, screenSize, sceneThreeJs, pickingDat
 
     }
     else if(variablesBallons.picked_handler != null) {
-        modifier_ballon(variablesBallons.picked_handler, pointIntersection);
+        deplacer_objet_methode_2(event, screenSize, intersects, sceneThreeJs.camera, pickingData);
+        replacer_handlers(variablesBallons.picked_handler);
+        //modifier_ballon(variablesBallons.picked_handler, pointIntersection);
         const instance = variablesBallons.picked_handler.instance;
 
         if(instance.mesh != null) {

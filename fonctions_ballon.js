@@ -76,6 +76,23 @@ function modifier_ballon(picked_handler, pointIntersection) {
     }
 }
 
+//a utiliser quand on a deplace les handlers avec la fonction deplacer_objet_methode_2
+//replace les handlers sur leur axe respectifs
+function replacer_handlers(picked_handler) {
+    if(picked_handler.axe === 0) {
+        picked_handler.position.y = 0;
+        picked_handler.position.z = 0;
+    }
+    if(picked_handler.axe === 1) {
+        picked_handler.position.x = 0;
+        picked_handler.position.z = 0;
+    }
+    if(picked_handler.axe === 2) {
+        picked_handler.position.x = 0;
+        picked_handler.position.y = 0;
+    }
+}
+
 //prend en argument une instance (du tableau instances) et cree le ballon associe
 function creer_ballon_from_instance(instance, sceneThreeJs) {
 	//a mettre avant d'appeler la fonction pour detruire la sphere : 

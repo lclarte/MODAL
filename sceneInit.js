@@ -5,6 +5,25 @@ const sceneInit = (function() {
 
 return {
 
+
+insertSkybox: function(sceneGraph) {
+    var geometry = new THREE.CubeGeometry(500, 500, 500);
+    var cubematerials = 
+    [
+        new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load("textures/front.png"), side: THREE.DoubleSide}),
+        new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load("textures/back.png"), side: THREE.DoubleSide}),
+        new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load("textures/up.png"), side: THREE.DoubleSide}),
+        new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load("textures/down.png"), side: THREE.DoubleSide}),
+        new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load("textures/right.png"), side: THREE.DoubleSide}),
+        new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load("textures/left.png"), side: THREE.DoubleSide})
+    ];
+
+    var cubematerial = new THREE.MeshFaceMaterial(cubematerials);
+    var cube = new THREE.Mesh(geometry, cubematerial);
+    sceneGraph.add(cube);
+
+},
+
     // Création et ajout de lumière dans le graphe de scène
 insertLight: function(sceneGraph,p) {
         const spotLight = new THREE.SpotLight(0xffffff,0.5);

@@ -150,6 +150,8 @@ function initEmptyScene(sceneThreeJs) {
     sceneThreeJs.controls.enabled = false;
 
     window.addEventListener('resize', function(event){onResize(sceneThreeJs);}, false);
+
+    sceneInit.insertSkybox(sceneThreeJs.sceneGraph);
 }
 
 function initDrawing(drawingThreeJs) {
