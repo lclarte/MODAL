@@ -75,7 +75,7 @@ function onMouseDownCorps(event, raycaster, screenSize, sceneThreeJs, pickingDat
 
 function onMouseDownDetails(event, raycaster, screenSize, sceneGraph, camera, pickingData, guiPrimitivesParam, Drawing, drawingGraph, drawingCamera) {
     if ( Drawing.drawingMode && Drawing.saved === false) {
-        mouseFunctions.enableDrawing(Drawing);
+        mouseFunctions.enableDrawing(event, Drawing, screenSize);
     }
 
     else if( pickingData.enabled ) {

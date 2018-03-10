@@ -1,7 +1,5 @@
 "use strict";
 
-const fichier_canon = "modeles/canon.obj" ;
-const fichier_engrenage = "modeles/gear.obj"; 
 
 const mouseFunctions = (function() {
 
@@ -11,7 +9,15 @@ return {
 //Appel dans onMouseDown
 //Condition: if ( Drawing.drawingMode && Drawing.saved === false)
 //OK implemente dans scene.js
-enableDrawing: function(Drawing) { Drawing.enabled = true;},
+enableDrawing: function(event, Drawing, screenSize) {
+  const xPixel = event.clientX;
+  const yPixel = event.clientY;
+
+  const x =  2*xPixel/screenSize.w-1;
+  const y = -2*yPixel/screenSize.h+1;
+  Drawing.enabled = true;
+  Drawing.firstPoint = new THREE.Vector2(x,y);
+},
 
 //Fonction qui permet de placer ou supprimer des primitves en cliquant
 //Appel dans onMouseDown
@@ -23,7 +29,7 @@ clickOn: function(event, raycaster, screenSize, sceneGraph, camera, pickingData,
   else {pickingData.enableDragAndDrop = true;}
 },
 
-//Fonction qui permet de placer un objet en cliquant 
+//Fonction qui permet de placer un objet en cliquant
 //Appel dans onMouseDown, clickOn -> OK pas besoin de le rajotuer dans le scene.js
 //Condition: if (event.button === 0)
 
@@ -36,7 +42,7 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
   const y = -2*yPixel/screenSize.h+1;
 
   raycaster.setFromCamera(new THREE.Vector2(x,y),camera);
-  const intersects = raycaster.intersectObjects(pickingData.selectableObjects, true);
+  const intersects = raycaster.intersectObjects( pickingData.selectableObjects, true);
 
   const nbrIntersection = intersects.length;
 
@@ -48,7 +54,8 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
       let o = intersection.object;
 
       const n = intersection.face.normal;
-      let object = new THREE.Object3D();
+      let object = null;
+      let object2 =null;
       let extrudeGeometry = null;
       let extrudeSettings = null;
 
@@ -71,10 +78,15 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
 
       else if (guiPrimitivesParam.primitiveType === "Sail"){
          extrudeSettings = { amount: 0.01, bevelEnabled:false };
-         extrudeGeometry = new THREE.ExtrudeBufferGeometry( Drawing.sailGeometry, extrudeSettings);
+         extrudeGeometry = new THREE.ExtrudeBufferGeometry( Drawing.sailGeometry, extrudeSettings );
          object = new THREE.Mesh( extrudeGeometry, MaterialRGB(0.9,0.9,0.9) ) ;
+
+         object2 = new THREE.Mesh( extrudeGeometry, MaterialRGB(0.9,0.9,0.9) ) ;
       }
       o.details.push(object); //a ce stade, on sait deja que l'objet sur lequel on va l'ajouter est un bout de coque
+      console.log(o.details);
+
+
 
       object.matrixAutoUpdate = false;
 
@@ -86,27 +98,62 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
       //const pointeur = primitive.Cylinder( p.clone() , p.clone().add(n.clone()) , 0.02, [1,1,1]);
 
 
-      const axis = new THREE.Vector3(0,0,1).cross( n.clone() );
-      const theta = Math.acos( n.clone().z );
-      const Rotate = new THREE.Matrix4().makeRotationAxis(axis.normalize(),theta);
-      object.geometry.applyMatrix(Rotate);
-      object.updateMatrix(); 
-      if (guiPrimitivesParam.primitiveType != "Sail"){
-        object.position.copy( center );
-      }
-      else if(guiPrimitivesParam.primitiveType == "Sail"){
-        object.position.copy( p.clone() );
-      }
-      //marqueur.position.copy ( p );
+
+      let axis = new THREE.Vector3(0,0,1).cross( n.clone() );
       object.updateMatrix();
 
-      object.castShadow = true;
-      object.receiveShadow = true;
-      object.name = "userObject";
-      sceneGraph.add(object);
-      //sceneGraph.add(marqueur);
-      //sceneGraph.add(pointeur);
-      pickingData.selectableObjects.push(object);
+      if (guiPrimitivesParam.primitiveType != "Sail"){
+
+        let theta = Math.acos( n.clone().z );
+        let Rotate = new THREE.Matrix4().makeRotationAxis(axis.normalize(),theta);
+
+        object.geometry.applyMatrix(Rotate);
+        object.position.copy( center );
+
+        object.updateMatrix();
+
+        object.castShadow = true;
+        object.receiveShadow = true;
+        object.name = "userObject";
+        sceneGraph.add(object);
+        pickingData.selectableObjects.push(object);
+      }
+
+      else if(guiPrimitivesParam.primitiveType == "Sail"){
+
+        let sailRotate1 = new THREE.Matrix4().makeRotationAxis(axis.normalize(),Math.PI);
+        let sailRotate2 = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(0,1,0),Math.PI/2);
+        let sailRotate3 = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(0,1,0),-Math.PI/2);
+
+        //object.applyMatrix(sailRotate1);
+        //object2.applyMatrix(sailRotate1);
+
+        object.applyMatrix(sailRotate2);
+        object.updateMatrix();
+
+        object2.applyMatrix(sailRotate3);
+        object2.updateMatrix();
+
+        object.position.copy( p.clone() );
+        object2.position.copy( new THREE.Vector3(p.clone().x, p.clone().y, -p.clone().z));
+
+        object2.updateMatrix();
+        object.updateMatrix();
+
+
+        object.castShadow = true;
+        object.receiveShadow = true;
+        object.name = "userObject";
+        sceneGraph.add(object);
+        pickingData.selectableObjects.push(object);
+
+        object2.castShadow = true;
+        object2.receiveShadow = true;
+        object2.name = "userObject";
+        sceneGraph.add(object2);
+        pickingData.selectableObjects.push(object2);
+      }
+
 }; },
 
 
@@ -145,7 +192,7 @@ saveDrawing: function(pickingData, Drawing) {
     Drawing.sailGeometry = new THREE.Shape( Drawing.vertices );
     Drawing.sail = new THREE.Mesh( Drawing.sailGeometry, new THREE.MeshBasicMaterial({color:0xff0000,wireframe: true,wireframeLinewidth:2}) );
     Drawing.saved = true;
-    console.log(Drawing.sail);
+
   }
 
   Drawing.enabled = false;
@@ -155,22 +202,30 @@ saveDrawing: function(pickingData, Drawing) {
 //Appel dans onMouseMove
 //Condition: if (Drawing.enabled)
 //OK implemente
-drawingInProgress: function(event, screenSize, Drawing, sceneGraph) {
+drawingInProgress: function(event, screenSize, Drawing, sceneGraph, camera) {
   const xPixel = event.clientX;
   const yPixel = event.clientY;
 
   const x =  2*xPixel/screenSize.w-1;
   const y = -2*yPixel/screenSize.h+1;
 
-  const point = new THREE.Vector2(x, y);
+  const point = new THREE.Vector2(x-Drawing.firstPoint.x, y-Drawing.firstPoint.y);
+
+  let D = new THREE.Matrix4();
+
+  D.set([5,0,0,0,
+         0,5,0,0,
+         0,0,5,0,
+         0,0,0,1]);
 
 
   Drawing.vertices.push(point);
-  const starGeometry = new THREE.Geometry();
-  starGeometry.vertices.push(point);
-  const starMaterial = new THREE.PointsMaterial( { color: 0x888888 } );
-  const Star = new THREE.Points( starGeometry, starMaterial );
-  sceneGraph.add(Star);
+  Drawing.line = new THREE.Line( new THREE.Shape( Drawing.vertices ), new THREE.LineBasicMaterial({color:0x00ff00}));
+  Drawing.line.position.copy(new THREE.Vector3(x,y,0));
+  Drawing.line.applyMatrix(D);
+  Drawing.line.updateMatrix();
+  //sceneGraph.add(Drawing.line);
+
 },
 
 //Fonction obsolète de Drag n' drop
