@@ -11,17 +11,17 @@ const CHEMINEE  = "modeles/cheminee.obj";
 let bool_animation = false;
 
 let modeles = {}; //tableau stockant les modeles 3D
-const noms_fichiers = [COQUE_AVANT, COQUE_AVANT_BAS, COQUE_MILIEU, COQUE_MILIEU_BAS, ENGRENAGE, CANON, HELICE];
+const noms_fichiers = [COQUE_AVANT, COQUE_AVANT_BAS, COQUE_MILIEU, COQUE_MILIEU_BAS, ENGRENAGE, CANON, HELICE, CHEMINEE];
 
 const loader = new THREE.OBJLoader();
 
-//remarque importante : on peut ajouter des champs 
+//remarque importante : on peut ajouter des champs
 
-//cette structure constitue une enumeration pour 
+//cette structure constitue une enumeration pour
 //savoir dans quelle phase de conception on est
 //actuellement.
 const phases = {
-    PHASE_CORPS:   0, //pour la coque et les ballons 
+    PHASE_CORPS:   0, //pour la coque et les ballons
     PHASE_DETAILS: 1, //lorsu'on veut ajouter des primitives ou sauvegarder ou autre
 };
 
@@ -38,7 +38,7 @@ function main(){
         controls: null,
         pickableObjects: [],
     };
-    
+
     /*
         Attention, il y a une difference entre pickingData et pickableObjects : pickableObjects est pour la modification de modules du bateau
         alors que pickingData est pour le placement des divers objets sur la coque (sail, sphere, cube, etc.)
@@ -67,6 +67,8 @@ function main(){
       enabled: false,
       drawingMode: false,
       drawingSaved: false,
+      rightSailList: [],
+      leftSailList: [],
     };
 
 
@@ -88,7 +90,7 @@ function main(){
     document.addEventListener('mouseup', wrapperMouseUp);
     const wrapperMouseMove = function(event) {onMouseMove(event, raycaster, sceneThreeJs, screenSize, pickingData, guiPrimitivesParam, Drawing);};
     document.addEventListener('mousemove', wrapperMouseMove);
-    const wrapperKeyDown = function(event) {onKeyDown(event, raycaster, screenSize, sceneThreeJs, pickingData)};
+    const wrapperKeyDown = function(event) {onKeyDown(event, raycaster, screenSize, sceneThreeJs, pickingData, Drawing)};
     document.addEventListener('keydown', wrapperKeyDown);
     const wrapperKeyUp = function(event) {onKeyUp(event, sceneThreeJs, pickingData)};
     document.addEventListener('keyup', wrapperKeyUp);
@@ -96,20 +98,20 @@ function main(){
     // *************************** //
     // Lancement de l'animation
     // *************************** //s
-    animationLoop(sceneThreeJs, pickingData);
+    animationLoop(sceneThreeJs, Drawing, pickingData);
 }
 
 function init3DObjects(sceneThreeJs, pickingData) {
     const sceneGraph = sceneThreeJs.sceneGraph;
-               
+
     const planeGeometryZ = primitive.Quadrangle(Vector3(-100, -100, 0), Vector3(-100, 100, 0), Vector3(100, 100, 0), Vector3(100, -100, 0));
     const plane = new THREE.Mesh(planeGeometryZ, MaterialRGB(2, 2, 2));
     plane.material.opacity = 0;
-    plane.material.transparent = true; //les deux lignes sont necessaires 
+    plane.material.transparent = true; //les deux lignes sont necessaires
     plane.name = "planZ"; //Z est la normale a ce plan => plan XY
     sceneGraph.add(plane);
     sceneThreeJs.pickableObjects.push(plane);
-    
+
 
     const nouveau_module = initialiser_module(Vector3(0, 0, 0), 0, 0, sceneThreeJs);
     pickingData.selectableObjects.push(nouveau_module.mesh);
@@ -132,7 +134,7 @@ function initEmptyScene(sceneThreeJs) {
     sceneThreeJs.sceneGraph.name = "sceneGraph";
 
     sceneThreeJs.camera = sceneInit.createCamera(0, 0, -5);
-    //la camera est situee sur l'axe z 
+    //la camera est situee sur l'axe z
     sceneThreeJs.camera.lookAt(0, 0, 0);
     sceneInit.insertAmbientLight(sceneThreeJs.sceneGraph);
     sceneInit.insertLight(sceneThreeJs.sceneGraph, Vector3(0, 1, -5));
@@ -158,7 +160,7 @@ function initGui(gPP, sceneThreeJs, pickingData, Drawing) {
 
     const cubeFunction = function(){
         gPP.primitiveType = "Cube";
-        phase_actuelle =  phases.PHASE_DETAILS; //si on etait en train de placer un cube, rappuyer dessus va nous repasser en mode "PHASE_CORPS"
+        phase_actuelle =  phases.PHASE_DETAILS;
     };
     const sphereFunction = function(){
         gPP.primitiveType= "Sphere";
@@ -166,14 +168,14 @@ function initGui(gPP, sceneThreeJs, pickingData, Drawing) {
     };
     const saveFunction = function(){ saveScene(sceneThreeJs.sceneGraph); };
     const loadFunction = function(){ loadScene(sceneThreeJs.sceneGraph,pickingData.selectableObjects); };
-    const exportOBJFunction = function(){ exportOBJ(pickingData.selectableObjects); };
+    const exportOBJFunction = function(){ exportOBJ(/*pickingData.selectableObjects*/pretraitement_export_obj(sceneThreeJs.sceneGraph.children)); };
 
     //Les trois fenetres de la GUI
     const guiPrimitivesInterface = {
     	Normal: corpsFunction, //bouton pour modifier le corps du bateau
         Cube: cubeFunction,
         Sphere: sphereFunction
-    }; 
+    };
 
     const guiMenuInterface       = {
         Save: saveFunction,
@@ -250,7 +252,7 @@ function calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs)
     const intersects = calculer_intersects(event, raycaster, screenSize, sceneThreeJs);
 
     if(intersects.length > 0) {
-        const intersection = intersects[0];    
+        const intersection = intersects[0];
         const pointIntersection = intersection.point.clone();
         return pointIntersection;
     }
@@ -297,12 +299,14 @@ function render(sceneThreeJs) {
 }
 
 
-function animate(sceneThreeJs, time) {
+function animate(sceneThreeJs, Drawing, time) {
     const t = time/1000;//time in second
     const delta = t - temps_precedent;
 
     if(bool_animation == true) {
         tourner_helices(delta);
+        mouvement_voiles(Drawing, t, delta);
+        animer_cheminee(t);
     }
 
     render(sceneThreeJs);
@@ -310,7 +314,7 @@ function animate(sceneThreeJs, time) {
 }
 
 // Fonction de gestion d'animation
-function animationLoop(sceneThreeJs, pickingData) {
+function animationLoop(sceneThreeJs, Drawing, pickingData) {
     if(Object.keys(modeles).length == noms_fichiers.length && !initialise_modeles_vide) {
         initialise_modeles_vide = true;
         init3DObjects(sceneThreeJs, pickingData);
@@ -321,8 +325,8 @@ function animationLoop(sceneThreeJs, pickingData) {
 
         // La fonction (dite de callback) recoit en paramètre le temps courant
         function(timeStamp){
-            animate(sceneThreeJs,timeStamp); // appel de notre fonction d'animation
-            animationLoop(sceneThreeJs, pickingData); // relance une nouvelle demande de mise à jour
+            animate(sceneThreeJs, Drawing, timeStamp); // appel de notre fonction d'animation
+            animationLoop(sceneThreeJs, Drawing, pickingData); // relance une nouvelle demande de mise à jour
         }
     );
 }
@@ -398,7 +402,7 @@ function loadOBJ(nom_fichier, receveur){
             		child.material = new THREE.MeshLambertMaterial({color: 0x421d20});
             	}
             })
-            receveur.add(objet); //malheureusement, on est oblige de faire comme ça 
+            receveur.add(objet); //malheureusement, on est oblige de faire comme ça
         });
 }
 

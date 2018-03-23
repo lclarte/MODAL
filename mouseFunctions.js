@@ -63,8 +63,8 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
         o = o.parent;
       }
       if(o.name !== "module") {
-        return; //on peut ajouter l'objet que si "le support" sera un bout de la coque
-        //c'est necessaire pour gerer efficacement le copier coller de coque
+        return;  //on peut ajouter l'objet que si "le support" sera un bout de la coque
+                 //c'est necessaire pour gerer efficacement le copier coller de coque
       }
 
       // Creation d'un nouvel objet au point selectionné
@@ -143,13 +143,15 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
 
         object.castShadow = true;
         object.receiveShadow = true;
-        object.name = "userObject";
+        object.name = "userRightSail";
+        Drawing.rightSailList.push(object);
         sceneGraph.add(object);
         pickingData.selectableObjects.push(object);
 
         object2.castShadow = true;
         object2.receiveShadow = true;
-        object2.name = "userObject";
+        object2.name = "userLeftSail";
+        Drawing.leftSailList.push(object2);
         sceneGraph.add(object2);
         pickingData.selectableObjects.push(object2);
       }

@@ -29,12 +29,34 @@ function deplacer_ballons(temps, delta) {
 	}
 }
 
-function mouvement_voiles(sceneThreeJs, temps) {
-	let voile = sceneThreeJs.sceneGraph.getObjectByName("userSail");
-	if (voile != null) {
-		console.log(voile);
-		voile.rotateY(0.5*Math.sin(temps));
+function mouvement_voiles(Drawing, temps, delta) {
+
+	const T = 0.5;
+	const a = 1;
+	const ny = new THREE.Vector3(0,1,0);
+
+	for (let i = 0; i < Drawing.rightSailList.length; i++) {
+		let voileDroite = Drawing.rightSailList[i];
+		voileDroite.rotateY( a*(Math.PI/8)*Math.sin(temps/T) - (Math.PI/8)*Math.sin( (temps-delta)/T) );
+		//voileDroite.updateMatrix();
 	}
+
+	for (let i = 0; i < Drawing.leftSailList.length; i++) {
+		let voileGauche = Drawing.leftSailList[i];
+		voileGauche.rotateY( -a*(Math.PI/8)*Math.sin(temps/T) + (Math.PI/8)*Math.sin( (temps-delta)/T) );
+	}
+
 }
 
-//troixieme fonction : faire de la fumee avec les tuyaux ?
+function animer_cheminee(t) {
+	let modules = variablesCorps.modules;
+
+	for(let i = 0; i < modules.length; i++) {
+		let cheminee = modules[i].getObjectByName("cheminee");
+		if(cheminee != undefined){
+			let scaling_x = 0.5 + 0.05*Math.cos(t);
+			let scaling_y = 0.5 + 0.02*Math.sin(t);
+			cheminee.scale.set(scaling_x, scaling_y, scaling_x);
+		}
+	}
+}

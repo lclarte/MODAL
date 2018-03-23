@@ -2,7 +2,7 @@
 
 function onMouseUp(event, pickingData, Drawing) {
     variablesCorps.picked_module    = null;
-    variablesBallons.picked_handler = null; 
+    variablesBallons.picked_handler = null;
     variablesBallons.picked_groupe  = null;
     pickingData.selectedObject      = null;
 
@@ -13,7 +13,7 @@ function onMouseDown(event, raycaster, screenSize, sceneThreeJs, pickingData, gu
     const camera = sceneThreeJs.camera;
     if(phase_actuelle === phases.PHASE_CORPS) {onMouseDownCorps(event, raycaster, screenSize, sceneThreeJs, pickingData);}
     if(phase_actuelle === phases.PHASE_DETAILS) {onMouseDownDetails(event, raycaster, screenSize, sceneThreeJs.sceneGraph, camera, pickingData, guiPrimitivesParam, Drawing);}
-    
+
 }
 
 function onMouseDownCorps(event, raycaster, screenSize, sceneThreeJs, pickingData) {
@@ -26,7 +26,7 @@ function onMouseDownCorps(event, raycaster, screenSize, sceneThreeJs, pickingDat
             return;
         }
         const pointIntersection = calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs);
-        if(event.buttons === 1){ //si seul le bouton gauche est clique 
+        if(event.buttons === 1){ //si seul le bouton gauche est clique
             if(intersects[0].object.name == "ballon") {
                 variablesBallons.picked_groupe = intersects[0].object.instance.groupe;
 
@@ -40,7 +40,7 @@ function onMouseDownCorps(event, raycaster, screenSize, sceneThreeJs, pickingDat
 
                 pickingData.selectedObject = variablesBallons.picked_handler;
                 pickingData.selectedPlane.p = intersects[0].point.clone();
-                pickingData.selectedPlane.n = sceneThreeJs.camera.getWorldDirection().clone(); 
+                pickingData.selectedPlane.n = sceneThreeJs.camera.getWorldDirection().clone();
             }
             else{
                 variablesCorps.picked_module = intersects[0].object; //apparement
@@ -108,6 +108,7 @@ function onMouseMoveCorps(event, raycaster, screenSize, sceneThreeJs, pickingDat
         ajouter_module(variablesCorps.picked_module, pointIntersection, sceneThreeJs, pickingData);
         mettre_a_jour_modele_tous_modules();
 
+        retirer_cheminees();
         retirer_helices();
         let tableau = determiner_extremite_arriere();
         ajouter_helices(sceneThreeJs.sceneGraph, tableau);
@@ -191,7 +192,7 @@ function onKeyDown(event, raycaster, screenSize, sceneThreeJs, pickingData) {
     //keyCode de la touche supprimer : 27
     if(event.keyCode === 27){
         const n = variablesBallons.instances.length;
-        for(let i = 0; i < n; i++) { 
+        for(let i = 0; i < n; i++) {
             sceneThreeJs.sceneGraph.remove(variablesBallons.instances[n-i-1].groupe);
             sceneThreeJs.sceneGraph.remove(variablesBallons.instances[n-i-1].mesh);
             variablesBallons.instances.pop();

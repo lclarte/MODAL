@@ -1,9 +1,9 @@
-"use strict";
+    "use strict";
 
 //contient les fonctions necessaires a la sauvegarde / chargement des scenes
 
 function saveScene(sceneGraph,createdObjects) {
-    download( JSON.stringify(sceneGraph), "save_scene.js" );
+    download( JSON.stringify(sceneGraph), "save_scene.js");
 }
 
 function loadScene(sceneGraph,createdObjects) {
@@ -32,12 +32,29 @@ function loadScene(sceneGraph,createdObjects) {
         }
         for( const k in toBeAdded ) {
             sceneGraph.add(toBeAdded[k]);
-            console.log(toBeAdded.name);
         }
-
     }
     
 );
+}
+
+function pretraitement_export_obj(liste_objets) {
+    const a_traiter = [];
+    for(let k in liste_objets) {
+        pretraiter_objet_recursif(liste_objets[k], a_traiter);
+    }
+    return a_traiter;
+}
+
+function pretraiter_objet_recursif(objet, traites) {
+    if(objet.geometry !== undefined) {
+        traites.push(objet);
+    }
+    else {
+        for(let i = 0; i < objet.children.length; i++) {
+            pretraiter_objet_recursif(objet.children[i], traites);
+        }
+    }
 }
 
 function exportOBJ(createdObjects) {
@@ -46,30 +63,35 @@ function exportOBJ(createdObjects) {
     let offset = 0;
 
 
-
     for( const k in createdObjects ) {
 
         // *************************************** //
         // Applique préalablement la matrice de transformation sur une copie des sommets du maillage
         // *************************************** //
+
+    
         createdObjects[k].updateMatrix();
         const matrix = createdObjects[k].matrix;
-
-        const toExport = createdObjects[k].geometry.clone();
-        toExport.applyMatrix( matrix );
+        let toExport = null;
+        if(createdObjects[k].geometry.type == "BufferGeometry") { //rappel : == est different de ===
+            toExport = new THREE.Geometry().fromBufferGeometry(createdObjects[k].geometry);
+        }
+        else{
+            toExport = createdObjects[k].geometry.clone();
+        }
+        toExport.applyMatrix(matrix);
 
 
         // *************************************** //
         // Exporte les sommets et les faces
         // *************************************** //
-        if( toExport.vertices!==undefined && toExport.faces!==undefined ) {
-
+        if( toExport.vertices !== undefined && toExport.faces !== undefined ) {
             const vertices = toExport.vertices;
             const faces = toExport.faces;
 
             for( const k in vertices ) {
                 const v = vertices[k];
-                stringOBJ += "v "+ v.x+ " "+ v.y+ " "+ v.z+ "\n";
+                stringOBJ += "v "+ v.x+ " "+ v.y + " "+ v.z+ "\n";
             }
 
             for( const k in faces  ) {
@@ -80,12 +102,12 @@ function exportOBJ(createdObjects) {
                 const b = f.b + 1 + offset;
                 const c = f.c + 1 + offset;
 
-                stringOBJ += "f "+ a+ " "+ b+ " "+ c+ "\n"
+                stringOBJ += "f "+ a+ " " + b+ " "+ c+ "\n"
             }
             offset += vertices.length;
         }
     }
-    download( stringOBJ, "save_scene.obj" );
+    //download( stringOBJ, "save_scene.OBJ");
 }
 
 function download(text, name) {
@@ -95,4 +117,3 @@ function download(text, name) {
     a.download = name;
     a.click();
 }
-

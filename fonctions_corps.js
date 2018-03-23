@@ -63,7 +63,7 @@ function initialiser_module(centre, x, y, sceneThreeJs){
     const modele = determiner_fichier_module(nouveau_module);
     
     nouveau_module.mesh = new THREE.Object3D();
-    nouveau_module.mesh.add(modeles[modele].clone());
+    nouveau_module.mesh = modeles[modele].clone();
 
     //colorier_mesh_obj(nouveau_module.mesh, 0x421d20);
     
@@ -242,11 +242,18 @@ function ajouter_helices(sceneGraph, modules_arriere) {
     }
 }
 
-
 function retirer_helices() {
     for(let i = 0; i < variablesCorps.modules.length; i++){
         let module =  variablesCorps.modules[i];
         let objet = module.getObjectByName("helice");
+        module.remove(objet);
+    }
+}
+
+function retirer_cheminees() {
+    for(let i = 0; i < variablesCorps.modules.length; i++) {
+        let module = variablesCorps.modules[i];
+        let objet = module.getObjectByName("cheminee");
         module.remove(objet);
     }
 }
@@ -259,5 +266,13 @@ function ajouter_cheminee(sceneGraph, modules_arriere) {
         let module = variablesCorps.modules[modules_arriere[i]];
         if(module.y > y_haut) { i_haut = i; y_haut = module.y};
     }
-    console.log(i_haut);
+    let module = variablesCorps.modules[modules_arriere[i_haut]];
+    const cheminee_mesh = new THREE.Object3D();
+    cheminee_mesh.add(modeles[CHEMINEE]);
+    cheminee_mesh.name = "cheminee";
+    cheminee_mesh.translateX(0.25);
+    cheminee_mesh.translateY(0.5);
+    cheminee_mesh.translateZ(0.5);
+    cheminee_mesh.scale.set(0.5, 0.5, 0.5);
+    module.add(cheminee_mesh.clone());
 }
