@@ -1,4 +1,4 @@
-//Code servant a animer notre objet 
+//Code servant a animer notre objet
 
 //premiere fonction : faire tourner les helices
 function tourner_helices(delta) {
@@ -29,4 +29,12 @@ function deplacer_ballons(temps, delta) {
 	}
 }
 
-//troixieme fonction : faire de la fumee avec les tuyaux ? 
+function mouvement_voiles(sceneThreeJs, temps) {
+	let voile = sceneThreeJs.sceneGraph.getObjectByName("userSail");
+	if (voile != null) {
+		console.log(voile);
+		voile.rotateY(0.5*Math.sin(temps));
+	}
+}
+
+//troixieme fonction : faire de la fumee avec les tuyaux ?
