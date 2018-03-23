@@ -250,3 +250,14 @@ function retirer_helices() {
         module.remove(objet);
     }
 }
+
+function ajouter_cheminee(sceneGraph, modules_arriere) {
+    //premierement, on determine le plus haut des modules
+    let i_haut = 0;
+    let y_haut = -Infinity;
+    for(let i = 0; i < modules_arriere.length; i++) {
+        let module = variablesCorps.modules[modules_arriere[i]];
+        if(module.y > y_haut) { i_haut = i; y_haut = module.y};
+    }
+    console.log(i_haut);
+}

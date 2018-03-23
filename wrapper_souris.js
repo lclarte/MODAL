@@ -9,12 +9,10 @@ function onMouseUp(event, pickingData, Drawing) {
     mouseFunctions.saveDrawing(pickingData, Drawing); //cf mouseFunction
 }
 
-function onMouseDown(event, raycaster, screenSize, sceneThreeJs, pickingData, guiPrimitivesParam, Drawing, drawingThreeJs) {
-    const drawingGraph =  drawingThreeJs.sceneGraph;
-    const drawingCamera = drawingThreeJs.camera;
+function onMouseDown(event, raycaster, screenSize, sceneThreeJs, pickingData, guiPrimitivesParam, Drawing) {
     const camera = sceneThreeJs.camera;
     if(phase_actuelle === phases.PHASE_CORPS) {onMouseDownCorps(event, raycaster, screenSize, sceneThreeJs, pickingData);}
-    if(phase_actuelle === phases.PHASE_DETAILS) {onMouseDownDetails(event, raycaster, screenSize, sceneThreeJs.sceneGraph, camera, pickingData, guiPrimitivesParam, Drawing, drawingGraph, drawingCamera);}
+    if(phase_actuelle === phases.PHASE_DETAILS) {onMouseDownDetails(event, raycaster, screenSize, sceneThreeJs.sceneGraph, camera, pickingData, guiPrimitivesParam, Drawing);}
     
 }
 
@@ -77,19 +75,17 @@ function onMouseDownCorps(event, raycaster, screenSize, sceneThreeJs, pickingDat
         }
 }
 
-function onMouseDownDetails(event, raycaster, screenSize, sceneGraph, camera, pickingData, guiPrimitivesParam, Drawing, drawingGraph, drawingCamera) {
+function onMouseDownDetails(event, raycaster, screenSize, sceneGraph, camera, pickingData, guiPrimitivesParam, Drawing) {
     if ( Drawing.drawingMode && Drawing.saved === false) {
         mouseFunctions.enableDrawing(event, Drawing, screenSize);
     }
 
     else if( pickingData.enabled ) {
-        mouseFunctions.clickOn(event, raycaster, screenSize, sceneGraph, camera, pickingData, guiPrimitivesParam, Drawing, drawingGraph);
+        mouseFunctions.clickOn(event, raycaster, screenSize, sceneGraph, camera, pickingData, guiPrimitivesParam, Drawing);
     }
 }
 
-function onMouseMove(event, raycaster, sceneThreeJs, screenSize, pickingData, guiPrimitivesParam, Drawing, drawingThreeJs) {
-    const drawingGraph = drawingThreeJs.sceneGraph;
-    const drawingCamera = drawingThreeJs.camera;
+function onMouseMove(event, raycaster, sceneThreeJs, screenSize, pickingData, guiPrimitivesParam, Drawing) {
 
     const camera = sceneThreeJs.camera;
     const sceneGraph = sceneThreeJs.sceneGraph;
@@ -98,7 +94,7 @@ function onMouseMove(event, raycaster, sceneThreeJs, screenSize, pickingData, gu
             onMouseMoveCorps(event, raycaster, screenSize, sceneThreeJs, pickingData);
 
     }
-    if(phase_actuelle === phases.PHASE_DETAILS) {onMouseMoveDetails(event, raycaster, screenSize, sceneGraph, camera, pickingData, guiPrimitivesParam, Drawing, drawingGraph, drawingCamera)}
+    if(phase_actuelle === phases.PHASE_DETAILS) {onMouseMoveDetails(event, raycaster, screenSize, sceneGraph, camera, pickingData, guiPrimitivesParam, Drawing)}
 }
 
 function onMouseMoveCorps(event, raycaster, screenSize, sceneThreeJs, pickingData) {
@@ -115,6 +111,7 @@ function onMouseMoveCorps(event, raycaster, screenSize, sceneThreeJs, pickingDat
         retirer_helices();
         let tableau = determiner_extremite_arriere();
         ajouter_helices(sceneThreeJs.sceneGraph, tableau);
+        ajouter_cheminee(sceneThreeJs.sceneGraph, tableau);
     }
     else if(variablesBallons.picked_groupe != null) {
         deplacer_objet_methode_2(event, screenSize, intersects, sceneThreeJs.camera, pickingData);
@@ -150,7 +147,7 @@ function onMouseMoveCorps(event, raycaster, screenSize, sceneThreeJs, pickingDat
     }
 }
 
-function onMouseMoveDetails(event, raycaster, screenSize, sceneGraph, camera, pickingData, guiPrimitivesParam, Drawing, drawingGraph, drawingCamera) {
+function onMouseMoveDetails(event, raycaster, screenSize, sceneGraph, camera, pickingData, guiPrimitivesParam, Drawing) {
     if (Drawing.enabled) {
       mouseFunctions.drawingInProgress(event, screenSize, Drawing, sceneGraph);
     }
@@ -162,28 +159,33 @@ function onMouseMoveDetails(event, raycaster, screenSize, sceneGraph, camera, pi
 }
 
 function onKeyDown(event, raycaster, screenSize, sceneThreeJs, pickingData) {
+
     //touche numpad 1 : 97
     switch(event.keyCode){
         case 98:
-        sceneThreeJs.camera.position.set(5, 0, 0);
-        sceneThreeJs.camera.lookAt(0, 0, 0);
-
+            sceneThreeJs.camera.position.set(5, 0, 0);
+            sceneThreeJs.camera.lookAt(0, 0, 0);
         break;
 
         case 100:
-        sceneThreeJs.camera.position.set(0, 0, 5);
-        sceneThreeJs.camera.lookAt(0, 0, 0);
+            sceneThreeJs.camera.position.set(0, 0, 5);
+            sceneThreeJs.camera.lookAt(0, 0, 0);
         break;
 
         case 102:
-        sceneThreeJs.camera.position.set(0, 0, -5);
-        sceneThreeJs.camera.lookAt(0, 0, 0);
+            sceneThreeJs.camera.position.set(0, 0, -5);
+            sceneThreeJs.camera.lookAt(0, 0, 0);
         break;
 
         case 104:
-        sceneThreeJs.camera.position.set(-5, 0, 0);
-        sceneThreeJs.camera.lookAt(0, 0, 0);
+            sceneThreeJs.camera.position.set(-5, 0, 0);
+            sceneThreeJs.camera.lookAt(0, 0, 0);
         break;
+
+        case 65: //correspond a la touche a du clavier
+            bool_animation = !bool_animation;
+        break;
+
     }
 
     //keyCode de la touche supprimer : 27

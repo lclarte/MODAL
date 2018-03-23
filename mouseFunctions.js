@@ -23,7 +23,7 @@ enableDrawing: function(event, Drawing, screenSize) {
 //Appel dans onMouseDown
 //Condition: else if( pickingData.enabled )
 //OK
-clickOn: function(event, raycaster, screenSize, sceneGraph, camera, pickingData, guiPrimitivesParam, Drawing, drawingGraph) {
+clickOn: function(event, raycaster, screenSize, sceneGraph, camera, pickingData, guiPrimitivesParam, Drawing) {
   if (event.button === 0){mouseFunctions.addObject(event, raycaster, screenSize, sceneGraph, camera, pickingData, guiPrimitivesParam, Drawing);}
   else if (event.button === 2){mouseFunctions.removeObject(event, raycaster, screenSize, sceneGraph, camera, pickingData, guiPrimitivesParam);}
   else {pickingData.enableDragAndDrop = true;}

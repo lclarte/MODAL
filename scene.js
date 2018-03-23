@@ -6,6 +6,9 @@ let temps_precedent = 0;
 const ENGRENAGE = "modeles/gear.obj";
 const CANON     = "modeles/canon.obj";
 const HELICE    = "modeles/helice.obj";
+const CHEMINEE  = "modeles/cheminee.obj";
+
+let bool_animation = false;
 
 let modeles = {}; //tableau stockant les modeles 3D
 const noms_fichiers = [COQUE_AVANT, COQUE_AVANT_BAS, COQUE_MILIEU, COQUE_MILIEU_BAS, ENGRENAGE, CANON, HELICE];
@@ -35,13 +38,6 @@ function main(){
         controls: null,
         pickableObjects: [],
     };
-
-    const drawingThreeJs = {
-        sceneGraph: null,
-        camera: null,
-        renderer: null,
-        controls: null,
-    }
     
     /*
         Attention, il y a une difference entre pickingData et pickableObjects : pickableObjects est pour la modification de modules du bateau
@@ -75,7 +71,6 @@ function main(){
 
 
     initEmptyScene(sceneThreeJs);
-    initDrawing(drawingThreeJs);
     initGui(guiPrimitivesParam, sceneThreeJs, pickingData, Drawing);
 
     const raycaster = new THREE.Raycaster();
@@ -87,11 +82,11 @@ function main(){
 
     // Fonction à appeler lors du clic de la souris: selection d'un objet
     //  (Création d'un wrapper pour y passer les paramètres souhaités)
-    const wrapperMouseDown = function(event) { onMouseDown(event, raycaster, screenSize, sceneThreeJs, pickingData, guiPrimitivesParam, Drawing, drawingThreeJs); };
+    const wrapperMouseDown = function(event) { onMouseDown(event, raycaster, screenSize, sceneThreeJs, pickingData, guiPrimitivesParam, Drawing); };
     document.addEventListener( 'mousedown', wrapperMouseDown);
     const wrapperMouseUp = function(event) {onMouseUp(event, pickingData, Drawing)};
     document.addEventListener('mouseup', wrapperMouseUp);
-    const wrapperMouseMove = function(event) {onMouseMove(event, raycaster, sceneThreeJs, screenSize, pickingData, guiPrimitivesParam, Drawing, drawingThreeJs);};
+    const wrapperMouseMove = function(event) {onMouseMove(event, raycaster, sceneThreeJs, screenSize, pickingData, guiPrimitivesParam, Drawing);};
     document.addEventListener('mousemove', wrapperMouseMove);
     const wrapperKeyDown = function(event) {onKeyDown(event, raycaster, screenSize, sceneThreeJs, pickingData)};
     document.addEventListener('keydown', wrapperKeyDown);
@@ -154,22 +149,6 @@ function initEmptyScene(sceneThreeJs) {
     sceneInit.insertSkybox(sceneThreeJs.sceneGraph);
 }
 
-function initDrawing(drawingThreeJs) {
-
-    drawingThreeJs.sceneGraph = new THREE.Scene();
-
-    drawingThreeJs.camera = sceneInit.createOrthographicCamera(0,0,0);
-    sceneInit.insertAmbientLight(drawingThreeJs.sceneGraph);
-
-    drawingThreeJs.renderer = sceneInit.createRenderer();
-    sceneInit.insertRenderInHtml(drawingThreeJs.renderer.domElement);
-
-    drawingThreeJs.controls = new THREE.OrbitControls( drawingThreeJs.camera, drawingThreeJs.renderer.domElement );
-
-    drawingThreeJs.controls.enabled = false;
-
-    window.addEventListener('resize', function(event){onResize(drawingThreeJs);}, false);
-}
 
 function initGui(gPP, sceneThreeJs, pickingData, Drawing) {
     //fonctions de la GUI
@@ -322,7 +301,9 @@ function animate(sceneThreeJs, time) {
     const t = time/1000;//time in second
     const delta = t - temps_precedent;
 
-    tourner_helices(delta);
+    if(bool_animation == true) {
+        tourner_helices(delta);
+    }
 
     render(sceneThreeJs);
     temps_precedent = t;

@@ -10,12 +10,12 @@ function loadScene(sceneGraph,createdObjects) {
 
     // Supprime les éléments de la scène actuels
     createdObjects.length = 1; // supprime les objets précédents (rem. le plan reste et il est le premier élément)
-    let object = sceneGraph.getObjectByName("userObject");
-    while( object!==undefined ) {
+    for(let i = sceneGraph.children.length-1; i > 0; i--) {
+        let object = sceneGraph.children[i];
         sceneGraph.remove(object);
-        object = sceneGraph.getObjectByName("userObject");
     }
 
+    
     // Chargement des objets à partir de JSON
     const loader = new THREE.ObjectLoader();
     loader.load("save_scene.js",
@@ -32,10 +32,11 @@ function loadScene(sceneGraph,createdObjects) {
         }
         for( const k in toBeAdded ) {
             sceneGraph.add(toBeAdded[k]);
-            createdObjects.push(toBeAdded[k]);
+            console.log(toBeAdded.name);
         }
 
     }
+    
 );
 }
 
@@ -81,14 +82,10 @@ function exportOBJ(createdObjects) {
 
                 stringOBJ += "f "+ a+ " "+ b+ " "+ c+ "\n"
             }
-
             offset += vertices.length;
         }
-
     }
-
     download( stringOBJ, "save_scene.obj" );
-
 }
 
 function download(text, name) {
