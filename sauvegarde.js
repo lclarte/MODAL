@@ -73,19 +73,23 @@ function exportOBJ(createdObjects) {
         createdObjects[k].updateMatrix();
         const matrix = createdObjects[k].matrix;
         let toExport = null;
-        if(createdObjects[k].geometry.type == "BufferGeometry") { //rappel : == est different de ===
-            toExport = new THREE.Geometry().fromBufferGeometry(createdObjects[k].geometry);
+        if(createdObjects[k].geometry != undefined) {
+            if(createdObjects[k].geometry.type == "BufferGeometry") { //rappel : == est different de ===
+                toExport = new THREE.Geometry().fromBufferGeometry(createdObjects[k].geometry);
+            }
+            else{
+                toExport = createdObjects[k].geometry.clone();
+            }
+            toExport.applyMatrix(matrix);
         }
-        else{
-            toExport = createdObjects[k].geometry.clone();
-        }
-        toExport.applyMatrix(matrix);
-
 
         // *************************************** //
         // Exporte les sommets et les faces
         // *************************************** //
-        if( toExport.vertices !== undefined && toExport.faces !== undefined ) {
+        if(toExport != null &&  toExport.vertices !== undefined && toExport.faces !== undefined ) {
+            console.log(createdObjects[k].name);
+            console.log('nombre de vertices : ', toExport.vertices.length);
+            console.log('nombre de faces : ', toExport.faces.length);
             const vertices = toExport.vertices;
             const faces = toExport.faces;
 
@@ -107,7 +111,7 @@ function exportOBJ(createdObjects) {
             offset += vertices.length;
         }
     }
-    //download( stringOBJ, "save_scene.OBJ");
+    download( stringOBJ, "save_scene.OBJ");
 }
 
 function download(text, name) {

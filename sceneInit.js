@@ -20,6 +20,7 @@ insertSkybox: function(sceneGraph) {
 
     var cubematerial = new THREE.MeshFaceMaterial(cubematerials);
     var cube = new THREE.Mesh(geometry, cubematerial);
+    cube.name = "skyBox";
     sceneGraph.add(cube);
 
 },

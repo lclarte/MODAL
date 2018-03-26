@@ -104,7 +104,7 @@ function main(){
 
 function init3DObjects(sceneThreeJs, pickingData) {
     const sceneGraph = sceneThreeJs.sceneGraph;
-
+    
     const planeGeometryZ = primitive.Quadrangle(Vector3(-100, -100, 0), Vector3(-100, 100, 0), Vector3(100, 100, 0), Vector3(100, -100, 0));
     const plane = new THREE.Mesh(planeGeometryZ, MaterialRGB(2, 2, 2));
     plane.material.opacity = 0;
@@ -112,7 +112,6 @@ function init3DObjects(sceneThreeJs, pickingData) {
     plane.name = "planZ"; //Z est la normale a ce plan => plan XY
     sceneGraph.add(plane);
     sceneThreeJs.pickableObjects.push(plane);
-
 
     const nouveau_module = initialiser_module(Vector3(0, 0, 0), 0, 0, sceneThreeJs);
     pickingData.selectableObjects.push(nouveau_module.mesh);
@@ -185,7 +184,7 @@ function initGui(gPP, sceneThreeJs, pickingData, Drawing) {
     };
     const saveFunction = function(){ saveScene(sceneThreeJs.sceneGraph); };
     const loadFunction = function(){ loadScene(sceneThreeJs.sceneGraph,pickingData.selectableObjects); };
-    const exportOBJFunction = function(){ exportOBJ(pickingData.selectableObjects); };
+    const exportOBJFunction = function(){ exportOBJ(pretraitement_export_obj(sceneThreeJs.sceneGraph.children)); };
 
     //Les trois fenetres de la GUI
     const guiPrimitivesInterface = {

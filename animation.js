@@ -29,21 +29,26 @@ function deplacer_ballons(temps, delta) {
 	}
 }
 
+
 function mouvement_voiles(Drawing, temps, delta) {
 
 	const T = 0.5;
 	const a = 1;
 	const ny = new THREE.Vector3(0,1,0);
 
-	for (let i = 0; i < Drawing.rightSailList.length; i++) {
+  for (let i = 0; i < Drawing.rightSailList.length; i++) {
 		let voileDroite = Drawing.rightSailList[i];
+		console.log(voileDroite);
 		voileDroite.rotateY( a*(Math.PI/8)*Math.sin(temps/T) - (Math.PI/8)*Math.sin( (temps-delta)/T) );
-		//voileDroite.updateMatrix();
+		//voileDroite.setRotationFromAxisAngle(ny, (Math.PI/8)*Math.sin(t/T) );
+		voileDroite.updateMatrix();
 	}
 
 	for (let i = 0; i < Drawing.leftSailList.length; i++) {
 		let voileGauche = Drawing.leftSailList[i];
+		console.log(voileGauche);
 		voileGauche.rotateY( -a*(Math.PI/8)*Math.sin(temps/T) + (Math.PI/8)*Math.sin( (temps-delta)/T) );
+		//voileGauche.setRotationFromAxisAngle(ny, -(Math.PI/8)*Math.sin(t/T) );
 	}
 
 }
