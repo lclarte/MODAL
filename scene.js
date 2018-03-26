@@ -11,7 +11,7 @@ const CHEMINEE  = "modeles/cheminee.obj";
 let bool_animation = false;
 
 let modeles = {}; //tableau stockant les modeles 3D
-const noms_fichiers = [COQUE_AVANT, COQUE_AVANT_BAS, COQUE_MILIEU, COQUE_MILIEU_BAS, ENGRENAGE, CANON, HELICE, CHEMINEE];
+const noms_fichiers = [COQUE_AVANT, COQUE_AVANT_BAS, COQUE_MILIEU, COQUE_MILIEU_BAS, ENGRENAGE, CANON, HELICE, CHEMINEE ];
 
 const loader = new THREE.OBJLoader();
 
@@ -73,6 +73,7 @@ function main(){
 
 
     initEmptyScene(sceneThreeJs);
+    console.log("truc");
     initGui(guiPrimitivesParam, sceneThreeJs, pickingData, Drawing);
 
     const raycaster = new THREE.Raycaster();
@@ -155,26 +156,46 @@ function initEmptyScene(sceneThreeJs) {
 function initGui(gPP, sceneThreeJs, pickingData, Drawing) {
     //fonctions de la GUI
     const corpsFunction = function() {
-    	phase_actuelle = phases.PHASE_CORPS;
+        phase_actuelle = phases.PHASE_CORPS;
     };
 
     const cubeFunction = function(){
         gPP.primitiveType = "Cube";
-        phase_actuelle =  phases.PHASE_DETAILS;
+        phase_actuelle =  phases.PHASE_DETAILS; //si on etait en train de placer un cube, rappuyer dessus va nous repasser en mode "PHASE_CORPS"
     };
     const sphereFunction = function(){
-        gPP.primitiveType= "Sphere";
+        gPP.primitiveType = "Sphere";
+        phase_actuelle =  phases.PHASE_DETAILS;
+    };
+    const gearFunction = function(){
+        gPP.primitiveType = "Gear";
+        phase_actuelle =  phases.PHASE_DETAILS;
+    };
+    const canonFunction = function(){
+        gPP.primitiveType = "Canon";
+        phase_actuelle =  phases.PHASE_DETAILS;
+    };
+    const propellerFunction = function(){
+        gPP.primitiveType = "Propeller";
+        phase_actuelle =  phases.PHASE_DETAILS;
+    };
+    const chimneyFunction = function(){
+        gPP.primitiveType = "Chimney";
         phase_actuelle =  phases.PHASE_DETAILS;
     };
     const saveFunction = function(){ saveScene(sceneThreeJs.sceneGraph); };
     const loadFunction = function(){ loadScene(sceneThreeJs.sceneGraph,pickingData.selectableObjects); };
-    const exportOBJFunction = function(){ exportOBJ(/*pickingData.selectableObjects*/pretraitement_export_obj(sceneThreeJs.sceneGraph.children)); };
+    const exportOBJFunction = function(){ exportOBJ(pickingData.selectableObjects); };
 
     //Les trois fenetres de la GUI
     const guiPrimitivesInterface = {
-    	Normal: corpsFunction, //bouton pour modifier le corps du bateau
+          Normal: corpsFunction, //bouton pour modifier le corps du bateau
         Cube: cubeFunction,
-        Sphere: sphereFunction
+        Sphere: sphereFunction,
+        Engrenage: gearFunction,
+        Canon: canonFunction,
+        Helice: propellerFunction,
+        Cheminee: chimneyFunction
     };
 
     const guiMenuInterface       = {
@@ -218,6 +239,10 @@ function initGui(gPP, sceneThreeJs, pickingData, Drawing) {
     guiPrimitives.add(guiPrimitivesInterface, "Normal");
     guiPrimitives.add(guiPrimitivesInterface, "Cube"); //Choix de la forme à ajouter
     guiPrimitives.add(guiPrimitivesInterface, "Sphere"); //Choix de la forme à ajouter
+    guiPrimitives.add(guiPrimitivesInterface, "Engrenage");
+    guiPrimitives.add(guiPrimitivesInterface, "Canon");
+    guiPrimitives.add(guiPrimitivesInterface, "Helice");
+    guiPrimitives.add(guiPrimitivesInterface, "Cheminee");
     guiPrimitives.add(gPP, "Size",0,1);
     guiPrimitives.addColor( gPP,"Color");
 
@@ -261,16 +286,16 @@ function calculer_point_intersection(event, raycaster, screenSize, sceneThreeJs)
 
 //voir seance de TP numero 2
 function deplacer_objet_methode_2(event, screenSize, intersects, camera, pickingData) {
-	const xPixel = event.clientX;
+    const xPixel = event.clientX;
     const yPixel = event.clientY;
 
     const x =  2*xPixel/screenSize.w-1;
     const y = -2*yPixel/screenSize.h+1;
         // Projection inverse passant du point 2D sur l'écran à un point 3D
     const selectedPoint = Vector3(x, y, 0.5 /*valeur de z après projection*/ );
-	selectedPoint.unproject( camera );
+    selectedPoint.unproject( camera );
 
-	// Direction du rayon passant par le point selectionné
+    // Direction du rayon passant par le point selectionné
         const p0 = camera.position;
         const d = selectedPoint.clone().sub( p0 );
 
@@ -305,8 +330,7 @@ function animate(sceneThreeJs, Drawing, time) {
 
     if(bool_animation == true) {
         tourner_helices(delta);
-        mouvement_voiles(Drawing, t, delta);
-        animer_cheminee(t);
+        mouvement_voiles(Drawing, t, delta)
     }
 
     render(sceneThreeJs);
@@ -398,9 +422,9 @@ function loadOBJ(nom_fichier, receveur){
         function(objet) {
             objet.name = "mesh";
             objet.traverse(function (child) {
-            	if(child instanceof THREE.Mesh) {
-            		child.material = new THREE.MeshLambertMaterial({color: 0x421d20});
-            	}
+                if(child instanceof THREE.Mesh) {
+                    child.material = new THREE.MeshLambertMaterial({color: 0x421d20});
+                }
             })
             receveur.add(objet); //malheureusement, on est oblige de faire comme ça
         });

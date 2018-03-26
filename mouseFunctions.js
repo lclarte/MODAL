@@ -63,9 +63,10 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
         o = o.parent;
       }
       if(o.name !== "module") {
-        return;  //on peut ajouter l'objet que si "le support" sera un bout de la coque
-                 //c'est necessaire pour gerer efficacement le copier coller de coque
+        return; //on peut ajouter l'objet que si "le support" sera un bout de la coque
+        //c'est necessaire pour gerer efficacement le copier coller de coque
       }
+
 
       // Creation d'un nouvel objet au point selectionné
       if (guiPrimitivesParam.primitiveType === "Cube"){
@@ -76,6 +77,23 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
           object = primitive_object.Sphere(new THREE.Vector3(0,0,0),guiPrimitivesParam.Size,guiPrimitivesParam.Color);
       }
 
+      else if (guiPrimitivesParam.primitiveType === "Gear"){
+          object = modeles[ENGRENAGE].clone();
+          console.log(object);
+      }
+
+      else if (guiPrimitivesParam.primitiveType === "Propeller"){
+          object = modeles[HELICE].clone();
+      }
+
+      else if (guiPrimitivesParam.primitiveType === "Chimney"){
+          object = modeles[CHEMINEE].clone();
+      }
+
+      else if (guiPrimitivesParam.primitiveType === "Canon"){
+          object = modeles[CANON].clone();
+      }
+
       else if (guiPrimitivesParam.primitiveType === "Sail"){
          extrudeSettings = { amount: 0.01, bevelEnabled:false };
          extrudeGeometry = new THREE.ExtrudeBufferGeometry( Drawing.sailGeometry, extrudeSettings );
@@ -84,7 +102,7 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
          object2 = new THREE.Mesh( extrudeGeometry, MaterialRGB(0.9,0.9,0.9) ) ;
       }
       o.details.push(object); //a ce stade, on sait deja que l'objet sur lequel on va l'ajouter est un bout de coque
-      console.log(o.details);
+      //console.log(o.details);
 
 
 
@@ -93,22 +111,71 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
       // le centre du nouvel objet est à la position:
       //   center = p + L/2 n
       const center = p.clone().add(n.clone().multiplyScalar(guiPrimitivesParam.Size/2));
+      const nb = new THREE.Vector3(n.z,n.y,-n.x);
 
       //const marqueur = primitive.Sphere(new THREE.Vector3(0,0,0),0.05,[0.1,0.1,0.1]);
       //const pointeur = primitive.Cylinder( p.clone() , p.clone().add(n.clone()) , 0.02, [1,1,1]);
 
 
 
-      let axis = new THREE.Vector3(0,0,1).cross( n.clone() );
+      let axis = new THREE.Vector3(0,1,0).cross( nb.clone() );
+      let theta = Math.acos( nb.clone().y );
+      let Rotate = new THREE.Matrix4().makeRotationAxis(axis.normalize(),theta);
+
+      let axisHelice = new THREE.Vector3(0,0,1).cross( nb.clone() );
+      let thetaHelice = Math.acos( -nb.clone().z );
+      let RotateHelice = new THREE.Matrix4().makeRotationAxis(axisHelice.normalize(),thetaHelice);
+
+      let axisCheminee = nb.clone().cross( new THREE.Vector3(0,1,0) );
+      let thetaCheminee = Math.acos( nb.clone().y );
+      let RotateCheminee = new THREE.Matrix4().makeRotationAxis(axisCheminee.normalize(),thetaCheminee);
+
+      let RotateZeroCanon = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(0,1,0), Math.PI/2);
+      let RotateDroitCanon = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(0,1,0), Math.PI/4);
+      let RotateGaucheCanon = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(0,1,0), -Math.PI/4);
+
       object.updateMatrix();
 
-      if (guiPrimitivesParam.primitiveType != "Sail"){
-
-        let theta = Math.acos( n.clone().z );
-        let Rotate = new THREE.Matrix4().makeRotationAxis(axis.normalize(),theta);
+      if (guiPrimitivesParam.primitiveType == "Sphere" || guiPrimitivesParam.primitiveType == "Cube"){
 
         object.geometry.applyMatrix(Rotate);
         object.position.copy( center );
+
+        object.updateMatrix();
+
+        object.castShadow = true;
+        object.receiveShadow = true;
+        object.name = "userObject";
+        sceneGraph.add(object);
+        pickingData.selectableObjects.push(object);
+      }
+
+      else if (guiPrimitivesParam.primitiveType != "Sphere" && guiPrimitivesParam.primitiveType != "Cube" && guiPrimitivesParam.primitiveType != "Sail"){
+
+        if (guiPrimitivesParam.primitiveType == "Gear"){
+          object.applyMatrix(RotateHelice);
+
+        }
+        else if (guiPrimitivesParam.primitiveType == "Propeller"){
+          object.applyMatrix(RotateHelice);
+
+        }
+        else if (guiPrimitivesParam.primitiveType == "Chimney"){
+          object.applyMatrix(RotateCheminee);
+
+        }
+        else if (guiPrimitivesParam.primitiveType == "Canon"){
+          object.applyMatrix(RotateZeroCanon);
+          if(p.z>0){
+            object.applyMatrix(RotateDroitCanon);
+          }
+          else if(p.z<0){
+            object.applyMatrix(RotateGaucheCanon);
+          }
+        }
+
+        object.position.copy(p);
+        object.scale.copy (new THREE.Vector3(guiPrimitivesParam.Size,guiPrimitivesParam.Size,guiPrimitivesParam.Size));
 
         object.updateMatrix();
 
