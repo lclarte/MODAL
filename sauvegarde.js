@@ -71,7 +71,10 @@ function exportOBJ(createdObjects) {
 
     
         createdObjects[k].updateMatrix();
+        createdObjects[k].updateMatrixWorld();
+
         const matrix = createdObjects[k].matrix;
+        const matrixWorld = createdObjects[k].matrixWorld;
         let toExport = null;
         if(createdObjects[k].geometry != undefined) {
             if(createdObjects[k].geometry.type == "BufferGeometry") { //rappel : == est different de ===
@@ -83,23 +86,27 @@ function exportOBJ(createdObjects) {
             toExport.applyMatrix(matrix);
         }
 
+        if(createdObjects[k].name == "handler" || createdObjects[k].name == "planZ" || createdObjects[k].name == "skyBox") {
+            toExport = null;
+        }
+
         // *************************************** //
         // Exporte les sommets et les faces
         // *************************************** //
-        if(toExport != null &&  toExport.vertices !== undefined && toExport.faces !== undefined ) {
-            console.log(createdObjects[k].name);
-            console.log('nombre de vertices : ', toExport.vertices.length);
-            console.log('nombre de faces : ', toExport.faces.length);
+        if(createdObjects[k] != null && toExport != null &&  toExport.vertices !== undefined && toExport.faces !== undefined ) {
+            console.log("select : ", createdObjects[k].name);
             const vertices = toExport.vertices;
+            console.log(vertices.length, '/', toExport.faces.length);
             const faces = toExport.faces;
-
-            for( const k in vertices ) {
-                const v = vertices[k];
-                stringOBJ += "v "+ v.x+ " "+ v.y + " "+ v.z+ "\n";
+            
+            for( const l in vertices ) {
+                const v = vertices[l];
+                v.applyMatrix4(matrixWorld);
+                stringOBJ += "v "+ v.x + " "+ v.y + " "+ v.z + "\n";
             }
 
-            for( const k in faces  ) {
-                const f = faces[k];
+            for( const l in faces  ) {
+                const f = faces[l];
 
                 // Les faces en OBJ sont indexés à partir de 1
                 const a = f.a + 1 + offset;
