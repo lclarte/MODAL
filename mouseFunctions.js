@@ -79,7 +79,6 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
 
       else if (guiPrimitivesParam.primitiveType === "Gear"){
           object = modeles[ENGRENAGE].clone();
-          console.log(object);
       }
 
       else if (guiPrimitivesParam.primitiveType === "Propeller"){
@@ -103,8 +102,6 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
       }
       o.details.push(object); //a ce stade, on sait deja que l'objet sur lequel on va l'ajouter est un bout de coque
       //console.log(o.details);
-
-
 
       object.matrixAutoUpdate = false;
 
@@ -150,6 +147,7 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
         pickingData.selectableObjects.push(object);
       }
 
+      //Dans le cas on a ajoute les modeles prefabriques 
       else if (guiPrimitivesParam.primitiveType != "Sphere" && guiPrimitivesParam.primitiveType != "Cube" && guiPrimitivesParam.primitiveType != "Sail"){
 
         if (guiPrimitivesParam.primitiveType == "Gear"){
@@ -173,7 +171,6 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
             object.applyMatrix(RotateGaucheCanon);
           }
         }
-
         object.position.copy(p);
         object.scale.copy (new THREE.Vector3(guiPrimitivesParam.Size,guiPrimitivesParam.Size,guiPrimitivesParam.Size));
 
@@ -222,9 +219,7 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
         sceneGraph.add(object2);
         pickingData.selectableObjects.push(object2);
       }
-
 }; },
-
 
 
 //Fonction qui permet de supprimer un objet en cliquant
@@ -234,20 +229,27 @@ addObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingDat
 
 removeObject: function(event, raycaster, screenSize, sceneGraph, camera, pickingData, guiPrimitivesParam) {
 
-  const xPixel = event.clientX;
   const yPixel = event.clientY;
 
+  const xPixel = event.clientX;
   const x =  2*xPixel/screenSize.w-1;
   const y = -2*yPixel/screenSize.h+1;
 
   raycaster.setFromCamera(new THREE.Vector2(x,y),camera);
-  const intersects = raycaster.intersectObjects( pickingData.selectableObjects );
+  const intersects = raycaster.intersectObjects( pickingData.selectableObjects, true);
 
   const nbrIntersection = intersects.length;
   const intersection = intersects[0];
 
-  if( nbrIntersection>0 && intersection.object != sceneGraph.getObjectByName("plane")) {
-    sceneGraph.remove(intersection.object);
+  let objet = intersection.object;
+  while(objet != null && (objet.name != "userObject" && objet.name != "serRightSail" && objet.name != "userLeftSail")) {
+    objet = objet.parent;
+  }
+
+  console.log(objet.name);
+
+  if(objet != null && intersection.object != sceneGraph.getObjectByName("plane")) {
+    sceneGraph.remove(objet);
   }
 },
 
