@@ -329,7 +329,8 @@ function animate(sceneThreeJs, Drawing, time) {
 
     if(bool_animation == true) {
         tourner_helices(delta);
-        mouvement_voiles(Drawing, t, delta)
+        mouvement_voiles(Drawing, t, delta);
+        animer_cheminee(t);
     }
 
     render(sceneThreeJs);
