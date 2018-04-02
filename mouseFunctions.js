@@ -242,11 +242,11 @@ removeObject: function(event, raycaster, screenSize, sceneGraph, camera, picking
   const intersection = intersects[0];
 
   let objet = intersection.object;
-  while(objet != null && (objet.name != "userObject" && objet.name != "serRightSail" && objet.name != "userLeftSail")) {
+  while(objet != null && (objet.name != "userObject" && objet.name != "userRightSail" && objet.name != "userLeftSail")) {
     objet = objet.parent;
   }
 
-  console.log(objet.name);
+  console.log("truc") ;
 
   if(objet != null && intersection.object != sceneGraph.getObjectByName("plane")) {
     sceneGraph.remove(objet);
