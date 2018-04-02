@@ -331,6 +331,7 @@ function animate(sceneThreeJs, Drawing, time) {
         tourner_helices(delta);
         mouvement_voiles(Drawing, t, delta);
         animer_cheminee(t);
+        //ajouter_ficelles(sceneThreeJs);
     }
 
     render(sceneThreeJs);

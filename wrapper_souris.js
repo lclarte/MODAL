@@ -141,11 +141,7 @@ function onMouseMoveCorps(event, raycaster, screenSize, sceneThreeJs, pickingDat
         sceneThreeJs.sceneGraph.add(mesh);
         sceneThreeJs.pickableObjects.push(mesh);
     }
-    supprimer_ficelles(sceneThreeJs.sceneGraph);
-    for(let i = 0; i < variablesBallons.instances.length; i++) {
-        let instance = variablesBallons.instances[i];
-        creer_ficelles_from_instance(instance, variablesCorps.modules, sceneThreeJs.sceneGraph);
-    }
+    ajouter_ficelles(sceneThreeJs);
 }
 
 function onMouseMoveDetails(event, raycaster, screenSize, sceneGraph, camera, pickingData, guiPrimitivesParam, Drawing) {

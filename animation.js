@@ -65,3 +65,11 @@ function animer_cheminee(t) {
 		}
 	}
 }
+
+function ajouter_ficelles(sceneThreeJs) {
+	supprimer_ficelles(sceneThreeJs.sceneGraph);
+    for(let i = 0; i < variablesBallons.instances.length; i++) {
+        let instance = variablesBallons.instances[i];
+        creer_ficelles_from_instance(instance, variablesCorps.modules, sceneThreeJs.sceneGraph);
+    }
+}
